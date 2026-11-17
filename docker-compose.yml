@@ -1,0 +1,41 @@
+services:
+  laundry-api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: mnilab-laundry-api
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3003:3003"
+    env_file:
+      - ./apps/api/.env
+    environment:
+      NODE_ENV: production
+      PORT: 3003
+      PLATFORM_API_URL: http://platform-api:3001
+    networks:
+      - mnilab-net
+
+  laundry-web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: mnilab-laundry-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3002:3002"
+    env_file:
+      - ./apps/web/.env.local
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      BACKEND_INTERNAL_URL: http://laundry-api:3003
+    depends_on:
+      - laundry-api
+    networks:
+      - mnilab-net
+
+networks:
+  mnilab-net:
+    external: true
+    name: mnilab-net
