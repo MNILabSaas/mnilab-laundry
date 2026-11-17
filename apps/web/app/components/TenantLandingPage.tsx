@@ -183,6 +183,9 @@ export default function TenantLandingPage({ branchSlug }: TenantLandingPageProps
   const isDemoTenant = Boolean(
     branding.isDemo || branding.slug === 'demo-laundry',
   );
+  const defaultLogo = isDemoTenant
+    ? '/Assets/logoDemoLaundry.webp'
+    : '/Assets/logoLaundry.webp';
 
   // Dalam mode Demo, user bisa mensimulasikan kondisi "Belum Bikin Cabang" (0 cabang) vs "Sudah Bikin Cabang"
   const effectiveBranches = useMemo(
@@ -335,7 +338,7 @@ export default function TenantLandingPage({ branchSlug }: TenantLandingPageProps
             className="flex items-center gap-3 group"
           >
             <img
-              src={branding.logoUrl || '/Assets/logoLaundry.webp'}
+              src={branding.logoUrl || defaultLogo}
               alt={`Logo ${branding.brandName}`}
               className="w-10 h-10 rounded-full object-cover shadow-[0_0_0_1px_rgba(14,15,12,0.12)]"
             />
@@ -1083,7 +1086,7 @@ export default function TenantLandingPage({ branchSlug }: TenantLandingPageProps
         <div className="max-w-[1200px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-[14px] text-[#6a6c6a]">
           <div className="flex flex-wrap items-center gap-3">
             <img
-              src={branding.logoUrl || '/Assets/logoLaundry.webp'}
+              src={branding.logoUrl || defaultLogo}
               alt={`Logo ${branding.brandName}`}
               className="w-8 h-8 rounded-full object-cover shadow-[0_0_0_1px_rgba(14,15,12,0.12)]"
             />

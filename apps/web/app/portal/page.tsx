@@ -1644,6 +1644,9 @@ export default function PortalPage() {
   const isDemoTenant = Boolean(
     tenantBranding.isDemo || tenantBranding.slug === 'demo-laundry',
   );
+  const defaultLogo = isDemoTenant
+    ? '/Assets/logoDemoLaundry.webp'
+    : '/Assets/logoLaundry.webp';
   const maxAllowedBranches = Number(tenantBranding.maxBranches || 3);
 
   // 1. Initial hydration guard (avoids SSR hydration mismatch)
@@ -1713,7 +1716,7 @@ export default function PortalPage() {
 
             <div className="flex items-center gap-3.5 mb-5">
               <img
-                src={tenantBranding.logoUrl || '/Assets/logoLaundry.webp'}
+                src={tenantBranding.logoUrl || defaultLogo}
                 alt={`Logo ${tenantBranding.brandName}`}
                 className="w-12 h-12 rounded-full object-cover shadow-[0_0_0_1px_rgba(14,15,12,0.12)]"
               />
@@ -1866,7 +1869,7 @@ export default function PortalPage() {
               className="flex items-center gap-2.5 group"
             >
               <img
-                src={tenantBranding.logoUrl || '/Assets/logoLaundry.webp'}
+                src={tenantBranding.logoUrl || defaultLogo}
                 alt={`Logo ${tenantBranding.brandName}`}
                 className="w-9 h-9 rounded-full object-cover shadow-[0_0_0_1px_rgba(14,15,12,0.12)]"
               />

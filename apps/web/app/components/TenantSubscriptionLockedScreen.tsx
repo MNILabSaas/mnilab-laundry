@@ -71,7 +71,7 @@ export default function TenantSubscriptionLockedScreen({
           }}
         >
           <img
-            src={branding.logoUrl || '/Assets/logoLaundry.webp'}
+            src={branding.logoUrl || (branding.isDemo ? '/Assets/logoDemoLaundry.webp' : '/Assets/logoLaundry.webp')}
             alt={branding.brandName}
             style={{
               width: '32px',

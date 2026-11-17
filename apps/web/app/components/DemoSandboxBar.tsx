@@ -281,7 +281,7 @@ export function DemoSandboxBar({
               {/* Upload Logo & Nama Brand Simulasi */}
               <div className="lg:col-span-5 flex flex-col sm:flex-row items-start sm:items-center gap-3.5 border-b lg:border-b-0 lg:border-r border-[#cbaf80]/15 pb-4 lg:pb-0 lg:pr-4">
                 <img
-                  src={activeBranding.logoUrl || '/Assets/logoLaundry.webp'}
+                  src={activeBranding.logoUrl || '/Assets/logoDemoLaundry.webp'}
                   alt="Preview Logo"
                   className="w-14 h-14 rounded-full object-cover border-2 border-[#cbaf80]/50 bg-white shrink-0"
                 />

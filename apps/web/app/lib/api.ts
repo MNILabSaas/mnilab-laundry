@@ -661,6 +661,26 @@ export const BAGUS_LAUNDRY_DEFAULT_BRANDING: TenantBranding = {
   isDefault: true,
 };
 
+export const DEMO_LAUNDRY_DEFAULT_BRANDING: TenantBranding = {
+  id: 'd4565d3c-d04d-463b-8a85-5df924d0b88a',
+  slug: 'demo-laundry',
+  brandName: 'Lumière Atelier Laundry (DEMO)',
+  tagline: 'Premium Garment Care & Steam Ironing',
+  logoUrl: '/Assets/logoDemoLaundry.webp',
+  primaryColor: '#e0a96d',
+  primaryHoverColor: '#cbaf80',
+  darkColor: '#1a140e',
+  secondaryColor: '#2b2118',
+  surfaceColor: '#3d2e20',
+  cityOrRegion: 'Jakarta Selatan',
+  defaultAddress: 'Jl. Senopati Raya No. 88, Kebayoran Baru',
+  whatsappPhone: '0812-1739-5849',
+  isDefault: false,
+  isDemo: true,
+  isActive: true,
+  isSubscriptionBlocked: false,
+};
+
 const API_BASE = (
   process.env.NEXT_PUBLIC_LAUNDRY_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
@@ -851,14 +871,18 @@ export function setActiveTenantSlug(slug: string): void {
 }
 
 export function getStoredTenantBranding(): TenantBranding {
-  if (typeof window === 'undefined') return BAGUS_LAUNDRY_DEFAULT_BRANDING;
   const activeSlug = getActiveTenantSlug();
+  const defaultBranding =
+    activeSlug === 'demo-laundry'
+      ? DEMO_LAUNDRY_DEFAULT_BRANDING
+      : BAGUS_LAUNDRY_DEFAULT_BRANDING;
+  if (typeof window === 'undefined') return defaultBranding;
   const raw = window.localStorage.getItem(`laundry_branding_${activeSlug}`);
-  if (!raw) return BAGUS_LAUNDRY_DEFAULT_BRANDING;
+  if (!raw) return defaultBranding;
   try {
     return JSON.parse(raw) as TenantBranding;
   } catch {
-    return BAGUS_LAUNDRY_DEFAULT_BRANDING;
+    return defaultBranding;
   }
 }
 
