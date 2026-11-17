@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import {
   formatTenantSubdomainHost,
   PLATFORM_WEB_URL,
@@ -33,115 +32,43 @@ export default function TenantSubscriptionLockedScreen({
   );
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'linear-gradient(160deg, #0b1408 0%, #13220d 55%, #091006 100%)',
-        color: '#f8fafc',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '580px',
-          background: 'rgba(255, 255, 255, 0.04)',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
-          borderRadius: '1.5rem',
-          padding: '2.25rem 2rem',
-          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.45)',
-          textAlign: 'center',
-        }}
-      >
+    <div className="min-h-screen bg-gradient-to-b from-[#F8FAFC] to-[#2C99D6]/[0.08] text-ink flex items-center justify-center p-6 font-body">
+      <div className="w-full max-w-[580px] bg-snow border border-line rounded-2xl p-8 sm:p-9 shadow-sm text-center">
         {/* Logo & Nama Mitra */}
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            padding: '0.5rem 1rem',
-            borderRadius: '999px',
-            background: 'rgba(255, 255, 255, 0.06)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            marginBottom: '1.25rem',
-          }}
-        >
+        <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full border border-line bg-white mb-5">
           <img
-            src={branding.logoUrl || (branding.isDemo ? '/Assets/logoDemoLaundry.webp' : '/Assets/logoLaundry.webp')}
+            src={
+              branding.logoUrl ||
+              (branding.isDemo
+                ? '/Assets/logoDemoLaundry.webp'
+                : '/Assets/logoLaundry.webp')
+            }
             alt={branding.brandName}
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              background: '#fff',
-            }}
+            className="w-8 h-8 rounded-full object-cover bg-white border border-line"
           />
-          <span
-            style={{
-              fontWeight: 800,
-              fontSize: '0.92rem',
-              color: '#ffffff',
-            }}
-          >
+          <span className="font-sub font-semibold text-[15px] text-ink">
             {branding.brandName}
           </span>
         </div>
 
         {/* Badge Status */}
-        <div style={{ marginBottom: '1rem' }}>
-          <span
-            style={{
-              display: 'inline-block',
-              padding: '0.35rem 0.9rem',
-              borderRadius: '999px',
-              fontSize: '0.72rem',
-              fontWeight: 800,
-              letterSpacing: '0.06em',
-              textTransform: 'uppercase',
-              background: isExpired
-                ? 'rgba(239, 68, 68, 0.18)'
-                : 'rgba(245, 158, 11, 0.18)',
-              color: isExpired ? '#fca5a5' : '#fcd34d',
-              border: isExpired
-                ? '1px solid rgba(239, 68, 68, 0.35)'
-                : '1px solid rgba(245, 158, 11, 0.35)',
-            }}
-          >
+        <div className="mb-4">
+          <span className="inline-block px-3.5 py-1 rounded-full text-[11px] font-sub font-semibold tracking-wider uppercase bg-scarlet text-snow">
             {isExpired
               ? 'Masa Berlangganan Jatuh Tempo (Auto-Stop)'
               : 'Layanan Berlangganan Dihentikan Sementara'}
           </span>
         </div>
 
-        <h1
-          style={{
-            fontSize: '1.55rem',
-            fontWeight: 800,
-            lineHeight: 1.3,
-            margin: '0 0 0.75rem',
-            color: '#ffffff',
-          }}
-        >
-          Website & Sistem Pelanggan Sedang Tidak Dapat Diakses
+        <h1 className="font-heading text-[24px] sm:text-[28px] font-bold leading-snug mb-3 text-ink">
+          Website &amp; Sistem Pelanggan Sedang Tidak Dapat Diakses
         </h1>
 
-        <p
-          style={{
-            fontSize: '0.92rem',
-            lineHeight: 1.65,
-            color: 'rgba(255, 255, 255, 0.76)',
-            margin: '0 0 1.35rem',
-          }}
-        >
+        <p className="text-[15px] leading-relaxed text-muted mb-6">
           {isExpired ? (
             <>
               Masa berlangganan bulanan untuk domain{' '}
-              <strong style={{ color: '#fde047' }}>{subdomainHost}</strong> telah
+              <strong className="text-ink">{subdomainHost}</strong> telah
               melewati tanggal jatuh tempo{' '}
               {branding.subscriptionEndAt
                 ? `(${new Date(branding.subscriptionEndAt).toLocaleDateString(
@@ -158,7 +85,7 @@ export default function TenantSubscriptionLockedScreen({
           ) : (
             <>
               Layanan berlangganan bulanan untuk domain{' '}
-              <strong style={{ color: '#fde047' }}>{subdomainHost}</strong>{' '}
+              <strong className="text-ink">{subdomainHost}</strong>{' '}
               sedang dihentikan sementara (NON-AKTIF) oleh Administrator Platform
               MNILab.
             </>
@@ -166,85 +93,32 @@ export default function TenantSubscriptionLockedScreen({
         </p>
 
         {/* Jaminan Data Tetap Tersimpan Aman */}
-        <div
-          style={{
-            textAlign: 'left',
-            padding: '1rem 1.15rem',
-            borderRadius: '1rem',
-            background: 'rgba(159, 232, 112, 0.08)',
-            border: '1px solid rgba(159, 232, 112, 0.25)',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <div
-            style={{
-              fontWeight: 800,
-              fontSize: '0.84rem',
-              color: '#9fe870',
-              marginBottom: '0.35rem',
-            }}
-          >
-            Data Bisnis & Riwayat Transaksi Tetap Tersimpan Aman
+        <div className="text-left p-4 rounded-xl bg-white border border-line mb-6">
+          <div className="font-sub font-semibold text-[14px] text-brand-dark mb-1">
+            Data Bisnis &amp; Riwayat Transaksi Tetap Tersimpan Aman
           </div>
-          <p
-            style={{
-              margin: 0,
-              fontSize: '0.8rem',
-              lineHeight: 1.55,
-              color: 'rgba(255, 255, 255, 0.82)',
-            }}
-          >
-            Bagi Pemilik / Super Owner <strong>{branding.brandName}</strong>:
+          <p className="text-[13px] leading-relaxed text-muted">
+            Bagi Pemilik / Super Owner <strong className="text-ink">{branding.brandName}</strong>:
             seluruh data cabang, akun kasir/pegawai, pelanggan, dan riwayat nota
-            di database Anda <strong>tetap utuh 100%</strong>. Saat langganan
+            di database Anda <strong className="text-ink">tetap utuh 100%</strong>. Saat langganan
             bulanan diperpanjang kembali, website dan portal operasional akan
             langsung aktif tanpa perlu mengatur ulang dari awal.
           </p>
         </div>
 
         {/* Tombol Aksi */}
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.75rem',
-            justifyContent: 'center',
-          }}
-        >
+        <div className="flex flex-wrap gap-3 justify-center">
           <a
             href={`https://wa.me/${cleanWa}?text=${waText}`}
             target="_blank"
             rel="noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0.75rem 1.35rem',
-              borderRadius: '0.85rem',
-              background: '#9fe870',
-              color: '#163300',
-              fontWeight: 800,
-              fontSize: '0.86rem',
-              textDecoration: 'none',
-            }}
+            className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-scarlet hover:bg-scarlet-dark text-snow font-sub font-semibold text-[14px] shadow-lg shadow-scarlet/25 transition-all"
           >
             Hubungi Admin MNILab (Perpanjang Langganan)
           </a>
           <a
             href={PLATFORM_WEB_URL}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0.75rem 1.2rem',
-              borderRadius: '0.85rem',
-              background: 'rgba(255, 255, 255, 0.08)',
-              border: '1px solid rgba(255, 255, 255, 0.16)',
-              color: '#ffffff',
-              fontWeight: 700,
-              fontSize: '0.84rem',
-              textDecoration: 'none',
-            }}
+            className="inline-flex items-center justify-center px-5 py-3 rounded-xl bg-brand-dark hover:bg-ink text-snow font-sub font-semibold text-[14px] transition-colors"
           >
             Info Platform MNILab
           </a>

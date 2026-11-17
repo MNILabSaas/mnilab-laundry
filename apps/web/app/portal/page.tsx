@@ -2001,17 +2001,17 @@ export default function PortalPage() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 sm:px-6 py-8 space-y-8">
         {isDemoTenant && (
-          <div className="bg-[#17140e] border border-[#cbaf80]/40 text-[#f7f3eb] rounded-[22px] p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 no-print">
+          <div className="bg-snow border border-line text-ink rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 no-print shadow-sm">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="bg-[#cbaf80] text-[#090806] text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full">
+                <span className="bg-scarlet text-snow text-[10px] font-sub font-semibold uppercase px-2.5 py-0.5 rounded-full">
                   MODE DEMO READ-ONLY
                 </span>
-                <span className="font-bold text-[14px] text-[#fceac2]">
+                <span className="font-sub font-semibold text-[14px] text-ink">
                   Simulasi Operasional &amp; Data Dummy Aktif
                 </span>
               </div>
-              <p className="text-[12px] text-[#c7beae]">
+              <p className="text-[12px] text-muted">
                 Anda dapat menjelajahi seluruh laporan, antrian cuci/setrika, dan
                 daftar pesanan dummy. Aksi pembuatan/perubahan transaksi dikunci oleh
                 server. Gunakan tombol <strong>Simulasi Branding</strong> di bilah atas
@@ -2024,7 +2024,7 @@ export default function PortalPage() {
               )}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="mnilab-gold-button text-[12px] font-bold px-4 py-2 rounded-full shrink-0"
+              className="bg-scarlet hover:bg-scarlet-dark text-snow shadow-lg shadow-scarlet/25 text-[12px] font-sub font-semibold px-4 py-2 rounded-xl shrink-0 transition-all"
             >
               Langganan Penuh via WhatsApp
             </a>
@@ -2149,12 +2149,12 @@ export default function PortalPage() {
                   </div>
                 </div>
                 {branches.length >= maxAllowedBranches && (
-                  <div className="bg-[#17140e] border border-[#cbaf80]/45 text-[#f7f3eb] rounded-[16px] p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="bg-snow border border-line text-ink rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
                     <div className="text-[12px]">
-                      <div className="font-bold text-[#fceac2] text-[13px]">
+                      <div className="font-sub font-semibold text-ink text-[13px]">
                         Kuota Cabang Paket Anda ({maxAllowedBranches} Cabang) Telah Penuh
                       </div>
-                      <p className="text-[#c7beae] mt-0.5">
+                      <p className="text-muted mt-0.5">
                         Paket langganan Anda saat ini mencakup maksimal{' '}
                         {maxAllowedBranches} cabang. Untuk menambahkan cabang ke-
                         {maxAllowedBranches + 1} dan seterusnya, silakan upgrade paket
@@ -2167,7 +2167,7 @@ export default function PortalPage() {
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mnilab-gold-button text-[12px] font-bold px-4 py-2 rounded-full shrink-0"
+                      className="bg-scarlet hover:bg-scarlet-dark text-snow shadow-lg shadow-scarlet/25 text-[12px] font-sub font-semibold px-4 py-2 rounded-xl shrink-0 transition-all"
                     >
                       Upgrade Kuota via WhatsApp
                     </a>
