@@ -208,4 +208,50 @@ export class PlatformClientService {
       body: JSON.stringify(params),
     });
   }
+
+  forgotPassword(email: string) {
+    return this.request<{ sent: boolean; email: string; message: string }>(
+      '/auth/forgot-password',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      },
+    );
+  }
+
+  resetPassword(dto: {
+    email: string;
+    code: string;
+    newPassword: string;
+    confirmPassword?: string;
+  }) {
+    return this.request<{ success: boolean; message: string }>(
+      '/auth/reset-password',
+      {
+        method: 'POST',
+        body: JSON.stringify(dto),
+      },
+    );
+  }
+
+  updateTenantBranding(
+    tenantId: string,
+    params: {
+      brandName?: string;
+      tagline?: string;
+      logoUrl?: string | null;
+      whatsappPhone?: string | null;
+      cityOrRegion?: string | null;
+      defaultAddress?: string | null;
+      themeConfigJson?: Partial<TenantThemeConfig>;
+    },
+  ) {
+    return this.request<PlatformTenantBranding>(
+      `/internal/tenants/${encodeURIComponent(tenantId)}/branding`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify(params),
+      },
+    );
+  }
 }

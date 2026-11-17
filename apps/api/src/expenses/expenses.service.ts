@@ -13,6 +13,7 @@ import {
   requireActorWriteBranch,
   resolveActorBranchScope,
 } from '../common/utils/scope.js';
+import { toSafeLikeContain } from '../common/utils/security.js';
 import type {
   CreateExpenseCategoryDto,
   CreateExpenseDto,
@@ -31,6 +32,14 @@ export class ExpensesService {
     @InjectRepository(Expense)
     private readonly expensesRepo: Repository<Expense>,
   ) {}
+
+  private enrichExpense(e: Expense) {
+    return Object.assign(e, {
+      recordedById: e.recordedByStaffId,
+      approvedById: e.approvedByStaffId,
+      rejectionNote: e.approvalNotes ?? null,
+    });
+  }
 
   listCategories(tenantId: string) {
     return this.categoriesRepo.find({
@@ -67,17 +76,44 @@ export class ExpensesService {
     return this.categoriesRepo.save(cat);
   }
 
-  listExpenses(query: ListExpensesQueryDto, actor: LaundryAuthUser) {
+  async listExpenses(query: ListExpensesQueryDto, actor: LaundryAuthUser) {
     const branchId = resolveActorBranchScope(actor, query.branchId);
-    const where: Record<string, unknown> = { tenantId: actor.tenantId };
-    if (branchId) where.branchId = branchId;
-    if (query.status) where.approvalStatus = query.status;
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 50;
 
-    return this.expensesRepo.find({
-      where,
-      relations: { category: true, branch: true, recordedBy: true },
-      order: { expenseDate: 'DESC', createdAt: 'DESC' },
-    });
+    const qb = this.expensesRepo
+      .createQueryBuilder('e')
+      .leftJoinAndSelect('e.category', 'category')
+      .leftJoinAndSelect('e.branch', 'branch')
+      .leftJoinAndSelect('e.recordedBy', 'recordedBy')
+      .leftJoinAndSelect('e.approvedBy', 'approvedBy')
+      .where('e.tenantId = :tenantId', { tenantId: actor.tenantId });
+
+    if (branchId) qb.andWhere('e.branchId = :branchId', { branchId });
+    if (query.categoryId) {
+      qb.andWhere('e.categoryId = :categoryId', { categoryId: query.categoryId });
+    }
+    const statusFilter = query.approvalStatus ?? query.status;
+    if (statusFilter) {
+      qb.andWhere('e.approvalStatus = :statusFilter', { statusFilter });
+    }
+    if (query.from) qb.andWhere('e.expenseDate >= :from', { from: query.from });
+    if (query.to) qb.andWhere('e.expenseDate <= :to', { to: query.to });
+    if (query.q) {
+      qb.andWhere(`e.description ILIKE :q ESCAPE '\\'`, {
+        q: toSafeLikeContain(query.q),
+      });
+    }
+
+    const [rawItems, total] = await qb
+      .orderBy('e.expenseDate', 'DESC')
+      .addOrderBy('e.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const data = rawItems.map((e) => this.enrichExpense(e));
+    return { data, items: data, total, page, limit };
   }
 
   async createExpense(dto: CreateExpenseDto, actor: LaundryAuthUser) {
@@ -90,7 +126,7 @@ export class ExpensesService {
     const autoApprove =
       actor.role === UserRole.SUPER_OWNER || actor.role === UserRole.BRANCH_OWNER;
 
-    return this.expensesRepo.save(
+    const saved = await this.expensesRepo.save(
       this.expensesRepo.create({
         tenantId: actor.tenantId,
         branchId,
@@ -98,7 +134,7 @@ export class ExpensesService {
         recordedByStaffId: actor.id,
         description: dto.description,
         amount: dto.amount,
-        expenseDate: dto.expenseDate,
+        expenseDate: dto.expenseDate || new Date().toISOString().slice(0, 10),
         paymentMethod: dto.paymentMethod,
         receiptUrl: dto.receiptUrl ?? null,
         notes: dto.notes ?? null,
@@ -109,6 +145,7 @@ export class ExpensesService {
         approvedAt: autoApprove ? new Date() : null,
       }),
     );
+    return this.enrichExpense(saved);
   }
 
   async decideExpense(
@@ -118,6 +155,7 @@ export class ExpensesService {
   ) {
     const expense = await this.expensesRepo.findOne({
       where: { id, tenantId: actor.tenantId },
+      relations: { category: true, branch: true, recordedBy: true, approvedBy: true },
     });
     if (!expense) throw new NotFoundException('Pengeluaran tidak ditemukan');
     if (
@@ -133,7 +171,8 @@ export class ExpensesService {
     expense.approvalStatus = dto.status;
     expense.approvedByStaffId = actor.id;
     expense.approvedAt = new Date();
-    expense.approvalNotes = dto.approvalNotes ?? null;
-    return this.expensesRepo.save(expense);
+    expense.approvalNotes = dto.rejectionNote ?? dto.approvalNotes ?? null;
+    const saved = await this.expensesRepo.save(expense);
+    return this.enrichExpense(saved);
   }
 }

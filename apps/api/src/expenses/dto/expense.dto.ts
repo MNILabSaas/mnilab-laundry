@@ -11,6 +11,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto.js';
 import { Trim } from '../../common/dto/transforms.js';
 import { ExpenseApprovalStatus, PaymentMethod } from '../../common/enums.js';
 import { IsSafeImageUri } from '../../common/utils/security.js';
@@ -48,14 +49,38 @@ export class UpdateExpenseCategoryDto {
   isActive?: boolean;
 }
 
-export class ListExpensesQueryDto {
+export class ListExpensesQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
 
   @IsOptional()
+  @IsUUID()
+  categoryId?: string;
+
+  @IsOptional()
   @IsEnum(ExpenseApprovalStatus)
   status?: ExpenseApprovalStatus;
+
+  @IsOptional()
+  @IsEnum(ExpenseApprovalStatus)
+  approvalStatus?: ExpenseApprovalStatus;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  from?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  to?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(100)
+  q?: string;
 }
 
 export class CreateExpenseDto {
@@ -77,8 +102,9 @@ export class CreateExpenseDto {
   @Min(1)
   amount: number;
 
+  @IsOptional()
   @IsDateString()
-  expenseDate: string;
+  expenseDate?: string;
 
   @IsEnum(PaymentMethod)
   paymentMethod: PaymentMethod;
@@ -103,4 +129,10 @@ export class DecideExpenseDto {
   @IsString()
   @MaxLength(500)
   approvalNotes?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(500)
+  rejectionNote?: string;
 }

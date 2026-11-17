@@ -42,6 +42,18 @@ export class BranchesController {
     return this.branchesService.list(actor);
   }
 
+  @Get('active')
+  @Roles(
+    UserRole.SUPER_OWNER,
+    UserRole.BRANCH_OWNER,
+    UserRole.CASHIER,
+    UserRole.WASHING,
+    UserRole.IRONING,
+  )
+  listActive(@CurrentUser() actor: LaundryAuthUser) {
+    return this.branchesService.list(actor);
+  }
+
   @Get(':id')
   get(
     @Param('id', ParseUUIDPipe) id: string,

@@ -7,13 +7,18 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto.js';
 import { Trim } from '../../common/dto/transforms.js';
 import { ExpenseApprovalStatus, LeaveType } from '../../common/enums.js';
 
-export class ListLeaveRequestsQueryDto {
+export class ListLeaveRequestsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  @IsOptional()
+  @IsEnum(ExpenseApprovalStatus)
+  status?: ExpenseApprovalStatus;
 }
 
 export class CreateLeaveRequestDto {

@@ -26,7 +26,13 @@ import { PlatformModule } from './platform/platform.module.js';
 import { PublicTrackingModule } from './public-tracking/public-tracking.module.js';
 import { ReportsModule } from './reports/reports.module.js';
 import { StaffModule } from './staff/staff.module.js';
-import { PublicBrandingController } from './tenant-context/public-branding.controller.js';
+import { DemoSeedService } from './tenant-context/demo-seed.service.js';
+import { InternalLaundryController } from './tenant-context/internal-laundry.controller.js';
+import {
+  PublicBrandingController,
+  TenantsPublicController,
+} from './tenant-context/public-branding.controller.js';
+import { TenantBrandingController } from './tenant-context/tenant-branding.controller.js';
 import { TenantContextMiddleware } from './tenant-context/tenant-context.middleware.js';
 import { TenantProfile } from './tenant-context/tenant-profile.entity.js';
 import { WorkflowModule } from './workflow/workflow.module.js';
@@ -79,8 +85,15 @@ import { WorkflowModule } from './workflow/workflow.module.js';
     ReportsModule,
     PublicTrackingModule,
   ],
-  controllers: [HealthController, PublicBrandingController],
+  controllers: [
+    HealthController,
+    PublicBrandingController,
+    TenantsPublicController,
+    TenantBrandingController,
+    InternalLaundryController,
+  ],
   providers: [
+    DemoSeedService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: LaundryJwtAuthGuard },
     { provide: APP_GUARD, useClass: EntitlementAndDemoGuard },

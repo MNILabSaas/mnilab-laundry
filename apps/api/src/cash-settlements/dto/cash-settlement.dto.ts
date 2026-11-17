@@ -9,6 +9,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { PaginationQueryDto } from '../../common/dto/pagination.dto.js';
 import { Trim } from '../../common/dto/transforms.js';
 import { ExpenseApprovalStatus } from '../../common/enums.js';
 
@@ -32,10 +33,29 @@ export class SubmitCashSettlementDto {
   cashierNotes?: string;
 }
 
-export class ListCashSettlementsQueryDto {
+export class ListCashSettlementsQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   branchId?: string;
+
+  @IsOptional()
+  @IsEnum(ExpenseApprovalStatus)
+  status?: ExpenseApprovalStatus;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  date?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  from?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  to?: string;
 }
 
 export class DecideCashSettlementDto {

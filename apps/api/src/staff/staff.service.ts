@@ -28,12 +28,17 @@ export class StaffService {
     private readonly platformClient: PlatformClientService,
   ) {}
 
-  async list(actor: LaundryAuthUser, requestedBranchId?: string) {
+  async list(
+    actor: LaundryAuthUser,
+    requestedBranchId?: string,
+    role?: UserRole,
+  ) {
     const branchId = resolveActorBranchScope(actor, requestedBranchId);
+    const where: Record<string, unknown> = { tenantId: actor.tenantId };
+    if (branchId) where.branchId = branchId;
+    if (role) where.role = role;
     return this.staffRepo.find({
-      where: branchId
-        ? { tenantId: actor.tenantId, branchId }
-        : { tenantId: actor.tenantId },
+      where,
       relations: { branch: true },
       order: { createdAt: 'DESC' },
     });
@@ -143,6 +148,7 @@ export class StaffService {
       ...(dto.email !== undefined ? { email: dto.email } : {}),
       ...(cleanPhone !== undefined ? { phone: cleanPhone } : {}),
       ...(dto.isActive !== undefined ? { isActive: dto.isActive } : {}),
+      ...(dto.password ? { newPassword: dto.password } : {}),
     });
 
     if (dto.name !== undefined) staff.name = dto.name;

@@ -8,6 +8,18 @@ import {
 } from 'typeorm';
 import { numericTransformer } from '../common/utils/numeric.transformer.js';
 
+export interface BranchLandingFeatureItem {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export interface BranchLandingConfig {
+  heroSlogan?: string;
+  heroDescription?: string;
+  features?: BranchLandingFeatureItem[];
+}
+
 @Entity('branches')
 @Index('UQ_branches_tenant_code', ['tenantId', 'code'], { unique: true })
 export class Branch {
@@ -96,6 +108,9 @@ export class Branch {
 
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
+
+  @Column({ name: 'landing_config_json', type: 'jsonb', nullable: true })
+  landingConfigJson: BranchLandingConfig | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

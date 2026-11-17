@@ -6,12 +6,288 @@
   --brand-primary-hover: #8ee05c;
   --brand-surface: #e2f6d5;
   --brand-secondary: #054d28;
-  --background: #ffffff;
-  --foreground: #454745;
+
+  --color-forest-ink: var(--brand-dark);
+  --color-lime-voltage: var(--brand-primary);
+  --color-spruce: var(--brand-secondary);
+  --color-linen-mist: var(--brand-surface);
+  --color-signal-blue: #0b4c72;
+  --color-alarm-red: #cb272f;
+  --color-charcoal: #454745;
+  --color-obsidian: #0e0f0c;
+  --color-pebble: #868685;
+  --color-slate: #6a6c6a;
+  --color-fog: #e8ebe6;
+  --color-paper: #ffffff;
+
+  --background: var(--color-paper);
+  --foreground: var(--color-charcoal);
+
+  --shadow-subtle: rgba(14, 15, 12, 0.12) 0px 0px 0px 1px;
+  --shadow-subtle-2: rgb(134, 134, 133) 0px 0px 0px 1px inset;
+  --shadow-xl: rgba(0, 0, 0, 0.15) 0px 10px 32px 0px, rgba(0, 0, 0, 0.04) 0px 40px 40px 0px;
+  --shadow-lg: rgba(0, 0, 0, 0.08) 0px 6px 20px 0px;
+
+  /* MNILab / DESIGN.md Slash Tokens */
+  --color-obsidian: #08080a;
+  --color-onyx: #040406;
+  --color-carbon: #121317;
+  --color-graphite: #1c1d22;
+  --color-slate: #2e3038;
+  --color-smoke: #464853;
+  --color-ash: #5e616e;
+  --color-steel: #777a88;
+  --color-fog: #9194a1;
+  --color-mist: #acafb9;
+  --color-silver: #c7c9d1;
+  --color-bone: #e2e3e9;
+  --color-paper-white: #ffffff;
+  --color-copper: #cc9166;
+  --color-gilded-gradient: #ae9357;
+  --gradient-gilded: linear-gradient(103deg, rgb(174, 147, 87), rgb(255, 240, 204) 40%, rgb(174, 147, 87) 70%, rgba(189, 157, 79, 0));
+
+  --mnilab-obsidian: #08080a;
+  --mnilab-onyx: #040406;
+  --mnilab-card: #040406;
+  --mnilab-card-elevated: #121317;
+  --mnilab-gold-highlight: #fff0cc;
+  --mnilab-gold-champagne: #ebd19e;
+  --mnilab-gold-primary: #ae9357;
+  --mnilab-gold-brushed: #bc9d71;
+  --mnilab-gold-bronze: #8f7552;
+  --mnilab-gold-deep: #725d42;
+  --mnilab-ivory: #e2e3e9;
+  --mnilab-muted: #9194a1;
+  --mnilab-border: #1c1d22;
+  --mnilab-border-strong: #2e3038;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-forest-ink: #163300;
+  --color-lime-voltage: #9fe870;
+  --color-spruce: #054d28;
+  --color-linen-mist: #e2f6d5;
+  --color-signal-blue: #0b4c72;
+  --color-alarm-red: #cb272f;
+  --color-charcoal: #454745;
+  --color-obsidian: #0e0f0c;
+  --color-pebble: #868685;
+  --color-slate: #6a6c6a;
+  --color-fog: #e8ebe6;
+  --color-paper: #ffffff;
+  --font-sans: var(--font-geist-sans), 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-charcoal);
+  font-family: var(--font-geist-sans), 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-feature-settings: "calt" 1;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Dynamic Multi-Tenant Brand Theme Overrides */
+.bg-\[\#163300\] {
+  background-color: var(--brand-dark) !important;
+}
+.text-\[\#163300\] {
+  color: var(--brand-dark) !important;
+}
+.border-\[\#163300\] {
+  border-color: var(--brand-dark) !important;
+}
+.focus\:border-\[\#163300\]:focus {
+  border-color: var(--brand-dark) !important;
+}
+.hover\:bg-\[\#163300\]:hover {
+  background-color: var(--brand-dark) !important;
+}
+.hover\:text-\[\#163300\]:hover {
+  color: var(--brand-dark) !important;
+}
+
+.bg-\[\#9fe870\] {
+  background-color: var(--brand-primary) !important;
+}
+.text-\[\#9fe870\] {
+  color: var(--brand-primary) !important;
+}
+.border-\[\#9fe870\] {
+  border-color: var(--brand-primary) !important;
+}
+.hover\:bg-\[\#8ee05c\]:hover {
+  background-color: var(--brand-primary-hover) !important;
+}
+
+.bg-\[\#e2f6d5\] {
+  background-color: var(--brand-surface) !important;
+}
+.hover\:bg-\[\#e2f6d5\]:hover {
+  background-color: var(--brand-surface) !important;
+}
+
+.bg-\[\#054d28\] {
+  background-color: var(--brand-secondary) !important;
+}
+.border-\[\#054d28\] {
+  border-color: var(--brand-secondary) !important;
+}
+.hover\:text-\[\#054d28\]:hover {
+  color: var(--brand-secondary) !important;
+}
+
+/* Slash / DESIGN.md Typography & System Utilities */
+.font-ivy {
+  font-family: 'Ivy Presto', 'Playfair Display', 'Cormorant Garamond', 'Libre Caslon Display', Georgia, serif;
+  letter-spacing: 0.01em;
+}
+
+.font-luxury {
+  font-family: 'Ivy Presto', 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: 0.01em;
+}
+
+.slash-primary-button {
+  background-color: #ffffff;
+  color: #000000;
+  border-radius: 9999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  border: 1px solid #ffffff;
+}
+.slash-primary-button:hover {
+  background-color: #e2e3e9;
+  border-color: #e2e3e9;
+}
+
+.slash-ghost-button {
+  background-color: transparent;
+  color: #ffffff;
+  border: 1px solid #777a88;
+  border-radius: 9999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+.slash-ghost-button:hover {
+  border-color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.slash-card {
+  background-color: #040406;
+  border: 1px solid #1c1d22;
+  border-radius: 10px;
+}
+
+.slash-pill-tag {
+  background-color: transparent;
+  border: 1px solid #2e3038;
+  border-radius: 9999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #acafb9;
+}
+
+.text-copper {
+  color: #cc9166;
+}
+
+.slash-gilded-text {
+  background: linear-gradient(103deg, rgb(174, 147, 87), rgb(255, 240, 204) 40%, rgb(174, 147, 87) 70%, rgba(189, 157, 79, 0.8));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mnilab-gold-text {
+  background: linear-gradient(
+    135deg,
+    #fff6da 0%,
+    #ebd19e 28%,
+    #cbaf80 58%,
+    #8f7552 82%,
+    #fceac2 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mnilab-gold-button {
+  background: linear-gradient(135deg, #fceac2 0%, #cbaf80 50%, #9f815f 100%);
+  color: #120e08;
+  box-shadow:
+    0 4px 24px -4px rgba(203, 175, 128, 0.38),
+    inset 0 1px 0 rgba(255, 248, 219, 0.65);
+}
+.mnilab-gold-button:hover {
+  background: linear-gradient(135deg, #fff6da 0%, #d8c092 50%, #b0916c 100%);
+  box-shadow:
+    0 6px 28px -2px rgba(235, 209, 158, 0.5),
+    inset 0 1px 0 rgba(255, 248, 219, 0.85);
+}
+
+.mnilab-luxury-card {
+  background: linear-gradient(180deg, rgba(28, 24, 17, 0.92) 0%, rgba(17, 15, 11, 0.96) 100%);
+  border: 1px solid rgba(203, 175, 128, 0.22);
+  box-shadow:
+    0 18px 48px -12px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(252, 234, 194, 0.08);
+}
+
+@keyframes mnilabPulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 18px rgba(203, 175, 128, 0.28));
+  }
+  50% {
+    transform: scale(1.035);
+    filter: drop-shadow(0 0 32px rgba(252, 234, 194, 0.52));
+  }
+}
+
+@keyframes mnilabShimmerBar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(220%);
+  }
+}
+
+.animate-mnilab-logo {
+  animation: mnilabPulseGlow 2.6s ease-in-out infinite;
+}
+
+.animate-mnilab-bar {
+  animation: mnilabShimmerBar 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-mnilab-logo,
+  .animate-mnilab-bar {
+    animation: none !important;
+  }
 }

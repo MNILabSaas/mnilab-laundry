@@ -93,6 +93,17 @@ export class CreateBranchDto {
   @IsOptional()
   @IsBoolean()
   isMain?: boolean;
+
+  @IsOptional()
+  landingConfigJson?: {
+    heroSlogan?: string;
+    heroDescription?: string;
+    features?: Array<{
+      icon: string;
+      title: string;
+      description: string;
+    }>;
+  } | null;
 }
 
 export class UpdateBranchDto {
@@ -174,4 +185,15 @@ export class UpdateBranchDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  landingConfigJson?: {
+    heroSlogan?: string;
+    heroDescription?: string;
+    features?: Array<{
+      icon: string;
+      title: string;
+      description: string;
+    }>;
+  } | null;
 }

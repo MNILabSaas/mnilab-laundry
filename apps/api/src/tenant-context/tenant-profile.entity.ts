@@ -7,12 +7,25 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+export interface FeatureHighlightItem {
+  icon: string;
+  title: string;
+  description: string;
+}
+
+export interface TenantLandingConfig {
+  heroSlogan?: string;
+  heroDescription?: string;
+  features?: FeatureHighlightItem[];
+}
+
 export interface TenantThemeConfig {
   primaryColor: string;
   primaryHoverColor: string;
   darkColor: string;
   secondaryColor: string;
   surfaceColor: string;
+  landingConfig?: TenantLandingConfig;
 }
 
 export const DEFAULT_LAUNDRY_THEME: TenantThemeConfig = {

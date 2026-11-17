@@ -39,13 +39,20 @@ export class CashSettlementsService {
     private readonly expensesRepo: Repository<Expense>,
   ) {}
 
+  private enrichSettlement(s: CashSettlement) {
+    return Object.assign(s, {
+      cashierId: s.cashierStaffId,
+      reviewedById: s.reviewedByStaffId,
+    });
+  }
+
   async computeDailyTotals(
     tenantId: string,
     branchId: string,
     dateStr: string,
   ) {
-    const start = new Date(`${dateStr}T00:00:00.000Z`);
-    const end = new Date(`${dateStr}T23:59:59.999Z`);
+    const start = new Date(`${dateStr}T00:00:00+07:00`);
+    const end = new Date(`${dateStr}T23:59:59.999+07:00`);
 
     const payments = await this.paymentsRepo
       .createQueryBuilder('p')
@@ -61,7 +68,6 @@ export class CashSettlementsService {
         branchId,
         expenseDate: dateStr,
         approvalStatus: ExpenseApprovalStatus.APPROVED,
-        paymentMethod: PaymentMethod.CASH,
       },
     });
 
@@ -118,10 +124,14 @@ export class CashSettlementsService {
       existing.difference = difference;
       existing.status = ExpenseApprovalStatus.PENDING;
       existing.cashierNotes = dto.cashierNotes ?? null;
-      return this.settlementsRepo.save(existing);
+      existing.reviewedByStaffId = null;
+      existing.reviewedAt = null;
+      existing.reviewNotes = null;
+      const saved = await this.settlementsRepo.save(existing);
+      return this.enrichSettlement(saved);
     }
 
-    return this.settlementsRepo.save(
+    const saved = await this.settlementsRepo.save(
       this.settlementsRepo.create({
         tenantId: actor.tenantId,
         branchId,
@@ -134,6 +144,7 @@ export class CashSettlementsService {
         cashierNotes: dto.cashierNotes ?? null,
       }),
     );
+    return this.enrichSettlement(saved);
   }
 
   async getByDate(
@@ -141,26 +152,43 @@ export class CashSettlementsService {
     branchIdParam: string | undefined,
     actor: LaundryAuthUser,
   ) {
-    const branchId = requireActorWriteBranch(actor, branchIdParam);
-    const [existing, totals] = await Promise.all([
-      this.settlementsRepo.findOne({
-        where: { tenantId: actor.tenantId, branchId, settlementDate: date },
-        relations: { branch: true, cashier: true },
-      }),
-      this.computeDailyTotals(actor.tenantId, branchId, date),
-    ]);
-    return { date, branchId, preview: totals, settlement: existing };
+    const branchId = resolveActorBranchScope(actor, branchIdParam);
+    if (!branchId) return null;
+    const existing = await this.settlementsRepo.findOne({
+      where: { tenantId: actor.tenantId, branchId, settlementDate: date },
+      relations: { branch: true, cashier: true, reviewedBy: true },
+    });
+    if (!existing) return null;
+    return this.enrichSettlement(existing);
   }
 
-  list(query: ListCashSettlementsQueryDto, actor: LaundryAuthUser) {
+  async list(query: ListCashSettlementsQueryDto, actor: LaundryAuthUser) {
     const branchId = resolveActorBranchScope(actor, query.branchId);
-    const where: Record<string, unknown> = { tenantId: actor.tenantId };
-    if (branchId) where.branchId = branchId;
-    return this.settlementsRepo.find({
-      where,
-      relations: { branch: true, cashier: true },
-      order: { settlementDate: 'DESC' },
-    });
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 50;
+
+    const qb = this.settlementsRepo
+      .createQueryBuilder('cs')
+      .leftJoinAndSelect('cs.branch', 'branch')
+      .leftJoinAndSelect('cs.cashier', 'cashier')
+      .leftJoinAndSelect('cs.reviewedBy', 'reviewedBy')
+      .where('cs.tenantId = :tenantId', { tenantId: actor.tenantId });
+
+    if (branchId) qb.andWhere('cs.branchId = :branchId', { branchId });
+    if (query.status) qb.andWhere('cs.status = :status', { status: query.status });
+    if (query.date) qb.andWhere('cs.settlementDate = :date', { date: query.date });
+    if (query.from) qb.andWhere('cs.settlementDate >= :from', { from: query.from });
+    if (query.to) qb.andWhere('cs.settlementDate <= :to', { to: query.to });
+
+    const [rawItems, total] = await qb
+      .orderBy('cs.settlementDate', 'DESC')
+      .addOrderBy('cs.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
+
+    const data = rawItems.map((s) => this.enrichSettlement(s));
+    return { data, items: data, total, page, limit };
   }
 
   async decide(
@@ -170,6 +198,7 @@ export class CashSettlementsService {
   ) {
     const item = await this.settlementsRepo.findOne({
       where: { id, tenantId: actor.tenantId },
+      relations: { branch: true, cashier: true, reviewedBy: true },
     });
     if (!item) throw new NotFoundException('Setoran kas tidak ditemukan');
     if (actor.role !== UserRole.SUPER_OWNER && item.branchId !== actor.branchId) {
@@ -182,6 +211,7 @@ export class CashSettlementsService {
     item.reviewedByStaffId = actor.id;
     item.reviewedAt = new Date();
     item.reviewNotes = dto.reviewNotes ?? null;
-    return this.settlementsRepo.save(item);
+    const saved = await this.settlementsRepo.save(item);
+    return this.enrichSettlement(saved);
   }
 }

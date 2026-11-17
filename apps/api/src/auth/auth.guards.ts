@@ -114,6 +114,7 @@ export class EntitlementAndDemoGuard implements CanActivate {
     if (
       path.startsWith('/health') ||
       path.startsWith('/public/branding') ||
+      path.startsWith('/tenants/') ||
       path.startsWith('/auth/')
     ) {
       return true;
@@ -142,7 +143,7 @@ export class EntitlementAndDemoGuard implements CanActivate {
       ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)
     ) {
       throw new ForbiddenException(
-        'Lingkungan DEMO bersifat Read-Only: perubahan data operasional dikunci.',
+        'Lingkungan DEMO bersifat Read-Only: Perubahan data operasional, transaksi, dan pengaturan dikunci. Gunakan fitur Simulasi Branding (Logo & Tema) di bilah atas untuk mencoba tampilan brand Anda, atau hubungi MNILab via WhatsApp untuk berlangganan penuh.',
       );
     }
 
@@ -155,6 +156,14 @@ export class RolesGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const isPublic = Boolean(
+      this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]),
+    );
+    if (isPublic) return true;
+
     const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(ROLES_KEY, [
       context.getHandler(),
       context.getClass(),

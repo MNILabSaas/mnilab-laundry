@@ -16,6 +16,7 @@ import {
 import { subtractMoney, sumMoney } from '../common/utils/money.js';
 import { resolveActorBranchScope } from '../common/utils/scope.js';
 import { Expense } from '../expenses/expense.entity.js';
+import { LaundryOrderItem } from '../orders/laundry-order-item.entity.js';
 import { LaundryOrder } from '../orders/laundry-order.entity.js';
 import { Payment } from '../payments/payment.entity.js';
 
@@ -38,6 +39,8 @@ export class ReportsService {
   constructor(
     @InjectRepository(LaundryOrder)
     private readonly ordersRepo: Repository<LaundryOrder>,
+    @InjectRepository(LaundryOrderItem)
+    private readonly itemsRepo: Repository<LaundryOrderItem>,
     @InjectRepository(Payment)
     private readonly paymentsRepo: Repository<Payment>,
     @InjectRepository(Expense)
@@ -54,8 +57,8 @@ export class ReportsService {
       new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
     const toStr = query.to ?? now.toISOString().slice(0, 10);
 
-    const start = new Date(`${fromStr}T00:00:00.000Z`);
-    const end = new Date(`${toStr}T23:59:59.999Z`);
+    const start = new Date(`${fromStr}T00:00:00+07:00`);
+    const end = new Date(`${toStr}T23:59:59.999+07:00`);
 
     const orderQb = this.ordersRepo
       .createQueryBuilder('o')
@@ -83,6 +86,36 @@ export class ReportsService {
     if (branchId) expQb.andWhere('e.branchId = :branchId', { branchId });
     const expenses = await expQb.getMany();
 
+    const activeItemsQb = this.itemsRepo
+      .createQueryBuilder('i')
+      .innerJoin('i.order', 'o')
+      .select('i.status', 'status')
+      .addSelect('COUNT(*)::int', 'count')
+      .where('i.tenantId = :tenantId', { tenantId: actor.tenantId })
+      .andWhere('o.pickedUpAt IS NULL');
+    if (branchId) {
+      activeItemsQb.andWhere('o.branchId = :branchId', { branchId });
+    }
+    const activeStatusRaw = await activeItemsQb
+      .groupBy('i.status')
+      .getRawMany<{ status: string; count: number }>();
+
+    const serviceVolumeQb = this.itemsRepo
+      .createQueryBuilder('i')
+      .innerJoin('i.order', 'o')
+      .select('i.serviceName', 'serviceName')
+      .addSelect('COUNT(*)::int', 'itemCount')
+      .addSelect('COALESCE(SUM(i.itemTotal), 0)', 'revenue')
+      .where('i.tenantId = :tenantId', { tenantId: actor.tenantId })
+      .andWhere('o.receivedAt BETWEEN :start AND :end', { start, end });
+    if (branchId) {
+      serviceVolumeQb.andWhere('o.branchId = :branchId', { branchId });
+    }
+    const serviceVolumeRaw = await serviceVolumeQb
+      .groupBy('i.serviceName')
+      .orderBy('revenue', 'DESC')
+      .getRawMany<{ serviceName: string; itemCount: number; revenue: string }>();
+
     const totalRevenueBilled = sumMoney(orders.map((o) => Number(o.total)));
     const totalPaymentsCollected = sumMoney(payments.map((p) => Number(p.amount)));
     const totalOutstanding = sumMoney(
@@ -90,6 +123,8 @@ export class ReportsService {
     );
     const totalExpenses = sumMoney(expenses.map((e) => Number(e.amount)));
     const netCashflow = subtractMoney(totalPaymentsCollected, totalExpenses);
+    const averageTransactionValue =
+      orders.length > 0 ? Math.round(totalRevenueBilled / orders.length) : 0;
 
     const paymentByMethod: Record<string, number> = {};
     for (const p of payments) {
@@ -108,18 +143,18 @@ export class ReportsService {
       ]);
     }
 
-    let branchComparison:
-      | Array<{
-          branchId: string;
-          branchName: string;
-          branchCode: string;
-          orderCount: number;
-          totalRevenue: number;
-          totalPayments: number;
-        }>
-      | undefined;
+    let branchComparison: Array<{
+      branchId: string;
+      branchName: string;
+      branchCode: string;
+      orderCount: number;
+      totalRevenue: number;
+      totalPayments: number;
+      totalExpenses: number;
+      netCashflow: number;
+    }> = [];
 
-    if (actor.role === UserRole.SUPER_OWNER && !branchId) {
+    if (!branchId) {
       const branches = await this.branchesRepo.find({
         where: { tenantId: actor.tenantId, isActive: true },
         order: { isMain: 'DESC', name: 'ASC' },
@@ -127,20 +162,26 @@ export class ReportsService {
       branchComparison = branches.map((b) => {
         const bOrders = orders.filter((o) => o.branchId === b.id);
         const bPays = payments.filter((p) => p.branchId === b.id);
+        const bExps = expenses.filter((e) => e.branchId === b.id);
+        const rev = sumMoney(bOrders.map((o) => Number(o.total)));
+        const pay = sumMoney(bPays.map((p) => Number(p.amount)));
+        const exp = sumMoney(bExps.map((e) => Number(e.amount)));
         return {
           branchId: b.id,
           branchName: b.name,
           branchCode: b.code,
           orderCount: bOrders.length,
-          totalRevenue: sumMoney(bOrders.map((o) => Number(o.total))),
-          totalPayments: sumMoney(bPays.map((p) => Number(p.amount))),
+          totalRevenue: rev,
+          totalPayments: pay,
+          totalExpenses: exp,
+          netCashflow: subtractMoney(pay, exp),
         };
       });
     }
 
     return {
       range: { from: fromStr, to: toStr },
-      branchId,
+      branchId: branchId ?? null,
       financials: {
         orderCount: orders.length,
         totalRevenueBilled,
@@ -148,10 +189,25 @@ export class ReportsService {
         totalOutstanding,
         totalExpenses,
         netCashflow,
+        averageTransactionValue,
         paymentByMethod,
         expenseByCategory,
       },
       branchComparison,
+      operations: {
+        activeItemsByStatus: activeStatusRaw.reduce<Record<string, number>>(
+          (acc, row) => {
+            acc[row.status] = Number(row.count);
+            return acc;
+          },
+          {},
+        ),
+        serviceBreakdown: serviceVolumeRaw.map((r) => ({
+          serviceName: r.serviceName,
+          itemCount: Number(r.itemCount),
+          revenue: Number(r.revenue),
+        })),
+      },
     };
   }
 }

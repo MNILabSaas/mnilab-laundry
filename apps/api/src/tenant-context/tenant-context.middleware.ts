@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   type NestMiddleware,
+  Optional,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -16,6 +17,7 @@ import {
   PlatformClientService,
   type PlatformTenantBranding,
 } from '../platform/platform-client.service.js';
+import { DemoSeedService } from './demo-seed.service.js';
 import {
   type ActiveTenantContext,
   type PlatformEntitlement,
@@ -43,6 +45,7 @@ export class TenantContextMiddleware implements NestMiddleware {
     private readonly jwtService: JwtService,
     @InjectRepository(TenantProfile)
     private readonly profilesRepo: Repository<TenantProfile>,
+    @Optional() private readonly demoSeedService?: DemoSeedService,
   ) {}
 
   private extractSubdomainSlug(req: Request): string | undefined {
@@ -97,6 +100,7 @@ export class TenantContextMiddleware implements NestMiddleware {
     const path = req.originalUrl || req.url || '';
     if (
       path.startsWith('/health') ||
+      path.startsWith('/internal/') ||
       path.startsWith('/auth/sso/exchange') ||
       path.startsWith('/auth/logout')
     ) {
@@ -105,13 +109,21 @@ export class TenantContextMiddleware implements NestMiddleware {
     }
 
     const headerSlugRaw = req.headers['x-tenant-slug'];
-    const headerSlug =
+    const headerSlugClean =
       typeof headerSlugRaw === 'string' && headerSlugRaw.trim()
         ? headerSlugRaw.trim().toLowerCase()
         : undefined;
-    const querySlug =
+    const headerSlug =
+      headerSlugClean && headerSlugClean !== 'default'
+        ? headerSlugClean
+        : undefined;
+    const querySlugClean =
       typeof req.query?.tenant === 'string' && req.query.tenant.trim()
         ? req.query.tenant.trim().toLowerCase()
+        : undefined;
+    const querySlug =
+      querySlugClean && querySlugClean !== 'default'
+        ? querySlugClean
         : undefined;
 
     let tokenTenantSlug: string | undefined;
@@ -157,6 +169,12 @@ export class TenantContextMiddleware implements NestMiddleware {
       await this.platformClient.resolveTenantBySlug(effectiveSlug);
 
     await this.syncTenantProfile(tenant, entitlement);
+    if (
+      (tenant.isDemo || tenant.slug === 'demo-laundry') &&
+      this.demoSeedService
+    ) {
+      await this.demoSeedService.ensureDemoSeeded(tenant.id).catch(() => undefined);
+    }
 
     const ctx: ActiveTenantContext = {
       tenantId: tenant.id,

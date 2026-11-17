@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
-import { laundryFetch, setActiveTenantSlug } from '../../lib/laundry-api';
+import {
+  apiFetch,
+  type AuthUser,
+  setActiveTenantSlug,
+  setAuthSession,
+  type TenantBranding,
+} from '../../lib/api';
 
 function SsoExchangeContent() {
   const router = useRouter();
@@ -16,7 +22,7 @@ function SsoExchangeContent() {
   useEffect(() => {
     if (!code) return;
     let active = true;
-    laundryFetch<{ tenant?: { slug: string } }>('/auth/sso/exchange', {
+    apiFetch<{ user?: AuthUser; tenant?: TenantBranding }>('/auth/sso/exchange', {
       method: 'POST',
       body: JSON.stringify({ launchCode: code }),
     })
@@ -24,6 +30,9 @@ function SsoExchangeContent() {
         if (!active) return;
         if (res?.tenant?.slug) {
           setActiveTenantSlug(res.tenant.slug);
+        }
+        if (res?.user) {
+          setAuthSession(res.user, res.tenant);
         }
         router.replace('/portal');
       })
@@ -51,10 +60,10 @@ function SsoExchangeContent() {
               {error}
             </p>
             <Link
-              href="/login"
+              href="/portal"
               className="inline-block rounded-xl bg-[#163300] px-4 py-2 text-xs font-semibold text-white"
             >
-              Ke Halaman Login Laundry
+              Ke Halaman Portal Laundry
             </Link>
           </div>
         ) : (

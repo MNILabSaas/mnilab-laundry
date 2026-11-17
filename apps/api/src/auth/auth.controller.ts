@@ -22,8 +22,11 @@ import {
 } from '../common/utils/auth-http.js';
 import { AuthService } from './auth.service.js';
 import {
+  ChangeOwnPasswordDto,
   ExchangeSsoDto,
+  ForgotPasswordDto,
   LaundryLoginDto,
+  ResetPasswordConfirmDto,
   UpdateOwnProfileDto,
 } from './dto/auth.dto.js';
 
@@ -67,6 +70,22 @@ export class AuthController {
     return { success: true };
   }
 
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('forgot-password')
+  @HttpCode(200)
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto.email);
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Post('reset-password')
+  @HttpCode(200)
+  resetPassword(@Body() dto: ResetPasswordConfirmDto) {
+    return this.authService.resetPassword(dto);
+  }
+
   @Get('me')
   me(@CurrentUser() user: LaundryAuthUser) {
     return this.authService.getMe(user.id, user.tenantId);
@@ -78,5 +97,13 @@ export class AuthController {
     @Body() dto: UpdateOwnProfileDto,
   ) {
     return this.authService.updateOwnProfile(user.id, user.tenantId, dto);
+  }
+
+  @Patch('password')
+  changePassword(
+    @CurrentUser() user: LaundryAuthUser,
+    @Body() dto: ChangeOwnPasswordDto,
+  ) {
+    return this.authService.changeOwnPassword(user, dto);
   }
 }

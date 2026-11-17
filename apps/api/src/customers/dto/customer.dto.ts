@@ -7,6 +7,12 @@ export class ListCustomersQueryDto extends PaginationQueryDto {
   @Trim()
   @IsString()
   @MaxLength(100)
+  q?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(100)
   search?: string;
 }
 

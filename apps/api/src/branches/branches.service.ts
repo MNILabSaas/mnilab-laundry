@@ -98,6 +98,7 @@ export class BranchesService {
         latitude: dto.latitude ?? null,
         longitude: dto.longitude ?? null,
         attendanceRadiusMeters: dto.attendanceRadiusMeters ?? 10,
+        landingConfigJson: dto.landingConfigJson ?? null,
         isMain: dto.isMain ?? activeCount === 0,
         isActive: true,
       }),

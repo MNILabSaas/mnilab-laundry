@@ -11,11 +11,63 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto.js';
-import { Trim } from '../../common/dto/transforms.js';
-import { OrderPaymentStatus, PaymentMethod } from '../../common/enums.js';
+import { ToBoolean, Trim } from '../../common/dto/transforms.js';
+import {
+  ItemStatus,
+  OrderPaymentStatus,
+  PaymentMethod,
+} from '../../common/enums.js';
+
+export class CreateOrderCustomerInlineDto {
+  @Trim()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  name: string;
+
+  @Trim()
+  @IsString()
+  @MaxLength(25)
+  phone: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(500)
+  address?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(500)
+  notes?: string;
+}
+
+export class InitialPaymentDto {
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  amount: number;
+
+  @IsEnum(PaymentMethod)
+  method: PaymentMethod;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(100)
+  reference?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(300)
+  notes?: string;
+}
 
 export class CreateOrderItemDto {
   @IsUUID()
@@ -56,6 +108,11 @@ export class CreateOrderDto {
   customerId?: string;
 
   @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateOrderCustomerInlineDto)
+  customer?: CreateOrderCustomerInlineDto;
+
+  @IsOptional()
   @Trim()
   @IsString()
   @MaxLength(100)
@@ -80,8 +137,14 @@ export class CreateOrderDto {
   discount?: number;
 
   @IsOptional()
+  @ToBoolean()
   @IsBoolean()
   isPayLater?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => InitialPaymentDto)
+  initialPayment?: InitialPaymentDto;
 
   @IsOptional()
   @Type(() => Number)
@@ -110,8 +173,37 @@ export class ListOrdersQueryDto extends PaginationQueryDto {
   paymentStatus?: OrderPaymentStatus;
 
   @IsOptional()
+  @IsEnum(ItemStatus)
+  itemStatus?: ItemStatus;
+
+  @IsOptional()
+  @IsUUID()
+  customerId?: string;
+
+  @IsOptional()
+  @ToBoolean()
+  @IsBoolean()
+  pickedUp?: boolean;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  @MaxLength(100)
+  q?: string;
+
+  @IsOptional()
   @Trim()
   @IsString()
   @MaxLength(100)
   search?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  from?: string;
+
+  @IsOptional()
+  @Trim()
+  @IsString()
+  to?: string;
 }

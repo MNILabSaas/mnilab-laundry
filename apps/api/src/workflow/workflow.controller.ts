@@ -39,7 +39,7 @@ export class WorkflowController {
     return this.workflowService.listIroningQueue(actor, query);
   }
 
-  @Get('ironing-earnings')
+  @Get(['ironing-earnings', 'ironing/earnings'])
   @Roles(UserRole.IRONING, UserRole.SUPER_OWNER, UserRole.BRANCH_OWNER)
   ironingEarnings(
     @CurrentUser() actor: LaundryAuthUser,

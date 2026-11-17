@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
@@ -10,6 +11,7 @@ import {
   Min,
 } from 'class-validator';
 import { Trim } from '../../common/dto/transforms.js';
+import { IsSafeImageUri } from '../../common/utils/security.js';
 
 export class ClockAttendanceDto {
   @IsOptional()
@@ -21,6 +23,14 @@ export class ClockAttendanceDto {
   staffId?: string;
 
   @IsOptional()
+  @IsUUID()
+  targetUserId?: string;
+
+  @IsOptional()
+  @IsEnum(['CHECK_IN', 'CHECK_OUT'])
+  action?: 'CHECK_IN' | 'CHECK_OUT';
+
+  @IsOptional()
   @Type(() => Number)
   @IsNumber()
   latitude?: number;
@@ -29,6 +39,16 @@ export class ClockAttendanceDto {
   @Type(() => Number)
   @IsNumber()
   longitude?: number;
+
+  @IsOptional()
+  @IsSafeImageUri()
+  photo?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  faceMatchScore?: number;
 
   @IsOptional()
   @Type(() => Number)

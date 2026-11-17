@@ -1,6 +1,7 @@
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { describe, expect, it } from 'vitest';
+import { IS_PUBLIC_KEY } from '../common/auth/auth.decorators.js';
 import { UserRole } from '../common/enums.js';
 import { runWithTenantContext } from '../tenant-context/tenant-context.js';
 import { DEFAULT_LAUNDRY_THEME } from '../tenant-context/tenant-profile.entity.js';
@@ -146,7 +147,10 @@ describe('Laundry Auth, Tenant Isolation, & Entitlement Guards', () => {
 
   it('RolesGuard membatasi akses berdasarkan role operasional Laundry', () => {
     const reflector = {
-      getAllAndOverride: () => [UserRole.SUPER_OWNER, UserRole.BRANCH_OWNER],
+      getAllAndOverride: (key: string) =>
+        key === IS_PUBLIC_KEY
+          ? false
+          : [UserRole.SUPER_OWNER, UserRole.BRANCH_OWNER],
     } as unknown as Reflector;
     const guard = new RolesGuard(reflector);
 

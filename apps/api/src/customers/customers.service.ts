@@ -29,8 +29,9 @@ export class CustomersService {
       .createQueryBuilder('c')
       .where('c.tenantId = :tenantId', { tenantId });
 
-    if (query.search) {
-      const pattern = toSafeLikeContain(query.search);
+    const rawSearch = (query.q || query.search || '').trim();
+    if (rawSearch) {
+      const pattern = toSafeLikeContain(rawSearch);
       qb.andWhere(`(c.name ILIKE :p ESCAPE '\\' OR c.phone ILIKE :p ESCAPE '\\')`, {
         p: pattern,
       });
@@ -42,7 +43,7 @@ export class CustomersService {
       .take(limit)
       .getManyAndCount();
 
-    return { items, total, page, limit };
+    return { data: items, items, total, page, limit };
   }
 
   async getById(id: string, tenantId: string) {

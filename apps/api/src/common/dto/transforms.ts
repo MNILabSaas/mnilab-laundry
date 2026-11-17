@@ -19,3 +19,16 @@ export function ToOptionalNumber() {
     return Number.isNaN(n) ? value : n;
   });
 }
+
+export function ToBoolean() {
+  return Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const lower = value.trim().toLowerCase();
+      if (lower === 'true' || lower === '1') return true;
+      if (lower === 'false' || lower === '0') return false;
+    }
+    return Boolean(value);
+  });
+}
