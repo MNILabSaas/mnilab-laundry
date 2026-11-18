@@ -39,11 +39,14 @@ export class Branch {
   @Column({ type: 'text', nullable: true })
   address: string | null;
 
-  @Column({ type: 'varchar', length: 20, nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   phone: string | null;
 
-  @Column({ name: 'whatsapp_number', type: 'varchar', length: 30, nullable: true })
+  @Column({ name: 'whatsapp_number', type: 'varchar', length: 255, nullable: true })
   whatsappNumber: string | null;
+
+  @Column({ name: 'whatsapp_numbers_json', type: 'jsonb', nullable: true })
+  whatsappNumbersJson: string[] | null;
 
   @Column({
     name: 'ironing_rate',

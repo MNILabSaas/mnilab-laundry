@@ -468,7 +468,11 @@ export class OrdersService {
     return this.getById(id, actor);
   }
 
-  async buildReceipt(id: string, actor: LaundryAuthUser) {
+  async buildReceipt(
+    id: string,
+    actor: LaundryAuthUser,
+    preferredSenderPhone?: string,
+  ) {
     const order = await this.getById(id, actor);
     const activeCtx = getActiveTenantContext();
     const storeName =
@@ -478,7 +482,47 @@ export class OrdersService {
     const storeAddress =
       order.branch?.address ||
       'Jl. Karang Menjangan 3F No. 2, Surabaya Timur';
+
+    const availableSenderPhones: Array<{ phone: string; label: string }> = [];
+    const seenDigits = new Set<string>();
+    const addPhoneOption = (rawPhone: string | null | undefined, label: string) => {
+      if (!rawPhone || typeof rawPhone !== 'string') return;
+      for (const part of rawPhone.split(/[,;\n]+/)) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const digits = trimmed.replace(/[^0-9]/g, '') || trimmed;
+        if (!seenDigits.has(digits)) {
+          seenDigits.add(digits);
+          availableSenderPhones.push({ phone: trimmed, label });
+        }
+      }
+    };
+
+    const branchWaArr = Array.isArray(order.branch?.whatsappNumbersJson)
+      ? order.branch.whatsappNumbersJson
+      : [];
+    branchWaArr.forEach((num, idx) => {
+      addPhoneOption(
+        num,
+        `WA Cabang #${idx + 1} (${order.branch?.name || 'Cabang'})`,
+      );
+    });
+    addPhoneOption(
+      order.branch?.whatsappNumber,
+      `WA Cabang (${order.branch?.name || 'Cabang'})`,
+    );
+    addPhoneOption(
+      order.branch?.phone,
+      `Telp Cabang (${order.branch?.name || 'Cabang'})`,
+    );
+    addPhoneOption(
+      activeCtx?.whatsappPhone,
+      `WA Utama Perusahaan (${activeCtx?.brandName || 'Pusat'})`,
+    );
+
     const storePhone =
+      (preferredSenderPhone && preferredSenderPhone.trim()) ||
+      availableSenderPhones[0]?.phone ||
       order.branch?.whatsappNumber ||
       order.branch?.phone ||
       activeCtx?.whatsappPhone ||
@@ -530,6 +574,7 @@ export class OrdersService {
       activeCtx?.tenantSlug,
       activeCtx?.brandName,
       order.branch,
+      activeCtx?.customDomain,
     );
     if (trackingUrl) {
       lines.push(
@@ -553,6 +598,7 @@ export class OrdersService {
         address: storeAddress,
         phone: storePhone,
       },
+      availableSenderPhones,
       order,
       whatsappText,
       whatsappUrl,
@@ -562,6 +608,7 @@ export class OrdersService {
 
   /**
    * Link cek nota per cabang, contoh: https://baguslaundry.mnilab.my.id/pusat
+   * atau jika customDomain diset: https://baguslaundry.com/pusat
    * Slug cabang harus identik dengan getBranchSlug() di frontend.
    * Untuk lokal set LAUNDRY_PUBLIC_WEB_URL (mis. http://localhost:3002) → /pusat?tenant=slug
    */
@@ -569,6 +616,7 @@ export class OrdersService {
     tenantSlug: string | undefined,
     brandName: string | undefined,
     branch: { name?: string | null; code?: string | null; isMain?: boolean } | null | undefined,
+    customDomain?: string | null,
   ): string | null {
     if (!tenantSlug || !branch) return null;
     const slugify = (text: string) =>
@@ -592,6 +640,14 @@ export class OrdersService {
     const localBase = process.env.LAUNDRY_PUBLIC_WEB_URL?.trim().replace(/\/$/, '');
     if (localBase) {
       return `${localBase}/${branchSlug}?tenant=${encodeURIComponent(tenantSlug)}`;
+    }
+    if (customDomain && customDomain.trim()) {
+      const cleanCustom = customDomain
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/$/, '');
+      return `https://${cleanCustom}/${branchSlug}`;
     }
     const domain = (process.env.PUBLIC_MAIN_DOMAIN?.trim() || 'mnilab.my.id').toLowerCase();
     const subdomain = tenantSlug === 'demo-laundry' ? 'demo' : tenantSlug.toLowerCase();

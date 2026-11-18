@@ -57,6 +57,7 @@ export class InternalLaundryController {
       tenant: {
         id: string;
         slug: string;
+        customDomain?: string | null;
         brandName: string;
         tagline?: string;
         logoUrl?: string | null;

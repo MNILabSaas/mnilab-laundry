@@ -104,6 +104,7 @@ export interface Branch {
   address: string | null;
   phone: string | null;
   whatsappNumber: string | null;
+  whatsappNumbersJson?: string[] | null;
   ironingRate: number;
   openTime?: string | null;
   closeTime?: string | null;
@@ -116,6 +117,34 @@ export interface Branch {
   isActive: boolean;
   landingConfigJson?: TenantLandingConfig | null;
   createdAt?: string;
+}
+
+export function getBranchPhoneList(branch?: Branch | null): string[] {
+  if (!branch) return [];
+  const raw: string[] = [];
+  if (Array.isArray(branch.whatsappNumbersJson)) {
+    for (const item of branch.whatsappNumbersJson) {
+      if (typeof item === 'string') raw.push(...item.split(/[,;\n]+/));
+    }
+  }
+  if (branch.whatsappNumber) {
+    raw.push(...branch.whatsappNumber.split(/[,;\n]+/));
+  }
+  if (branch.phone) {
+    raw.push(...branch.phone.split(/[,;\n]+/));
+  }
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const r of raw) {
+    const trimmed = r.trim();
+    if (!trimmed) continue;
+    const digits = trimmed.replace(/[^0-9]/g, '') || trimmed;
+    if (!seen.has(digits)) {
+      seen.add(digits);
+      result.push(trimmed);
+    }
+  }
+  return result;
 }
 
 export interface AuthUser {
@@ -511,6 +540,7 @@ export interface IroningHistoryItem {
 export interface TenantBranding {
   id: string;
   slug: string;
+  customDomain?: string | null;
   brandName: string;
   tagline: string;
   logoUrl: string | null;
@@ -714,16 +744,24 @@ export function getTenantSubdomain(slug?: string, brandName?: string): string {
 export function formatTenantSubdomainHost(
   brandName: string,
   fallbackSlug?: string,
+  customDomain?: string | null,
 ): string {
+  if (customDomain && customDomain.trim()) {
+    return customDomain
+      .trim()
+      .toLowerCase()
+      .replace(/^https?:\/\//, '')
+      .replace(/\/$/, '');
+  }
   return `${getTenantSubdomain(fallbackSlug, brandName)}.${MAIN_PLATFORM_DOMAIN}`;
 }
 
-/** Link publik cek nota cabang, contoh: baguslaundry.mnilab.my.id/pusat */
+/** Link publik cek nota cabang, contoh: baguslaundry.mnilab.my.id/pusat atau baguslaundry.com/pusat */
 export function formatBranchPublicUrl(
-  branding: Pick<TenantBranding, 'brandName' | 'slug'>,
+  branding: Pick<TenantBranding, 'brandName' | 'slug' | 'customDomain'>,
   branch: Branch,
 ): string {
-  return `${formatTenantSubdomainHost(branding.brandName, branding.slug)}/${getBranchSlug(branch, branding.brandName)}`;
+  return `${formatTenantSubdomainHost(branding.brandName, branding.slug, branding.customDomain)}/${getBranchSlug(branch, branding.brandName)}`;
 }
 
 export function extractTenantSlugFromHost(hostname?: string): string | null {
@@ -758,6 +796,16 @@ export function extractTenantSlugFromHost(hostname?: string): string | null {
       }
       return null;
     }
+  }
+
+  // Jika diakses melalui Custom Domain mandiri (mis. berkahlaundry.com atau www.berkahlaundry.id)
+  if (
+    raw.includes('.') &&
+    raw !== MAIN_PLATFORM_DOMAIN &&
+    raw !== 'mnilab.my.id' &&
+    raw !== 'mnilab.id'
+  ) {
+    return raw.replace(/^www\./, '');
   }
 
   return null;

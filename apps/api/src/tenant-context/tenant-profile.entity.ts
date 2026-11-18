@@ -49,6 +49,9 @@ export class TenantProfile {
   @Column({ type: 'varchar', length: 80 })
   slug: string;
 
+  @Column({ name: 'custom_domain', type: 'varchar', length: 160, nullable: true })
+  customDomain: string | null;
+
   @Column({ name: 'brand_name', type: 'varchar', length: 120 })
   brandName: string;
 

@@ -12,6 +12,7 @@ import type { TenantThemeConfig } from '../tenant-context/tenant-profile.entity.
 export interface PlatformTenantBranding {
   id: string;
   slug: string;
+  customDomain?: string | null;
   brandName: string;
   tagline: string;
   logoUrl: string | null;

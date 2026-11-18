@@ -27,6 +27,7 @@ export function formatTenantBrandingForClient(
     id: ctx.tenantId,
     tenantId: ctx.tenantId,
     slug: ctx.tenantSlug,
+    customDomain: ctx.customDomain ?? null,
     brandName: ctx.brandName,
     tagline: ctx.tagline || 'The Best Partner in Laundry Service',
     logoUrl: ctx.logoUrl,
@@ -114,6 +115,7 @@ export class TenantsPublicController {
         id: p.tenantId,
         tenantId: p.tenantId,
         slug: p.slug,
+        customDomain: p.customDomain ?? null,
         brandName: p.brandName,
         tagline: p.tagline || 'The Best Partner in Laundry Service',
         logoUrl: p.logoUrl,
@@ -161,6 +163,7 @@ export class TenantsPublicController {
       {
         tenantId: tenant.id,
         slug: tenant.slug,
+        customDomain: tenant.customDomain ?? null,
         brandName: tenant.brandName,
         tagline: tenant.tagline,
         logoUrl: tenant.logoUrl,
@@ -185,6 +188,7 @@ export class TenantsPublicController {
       {
         tenantId: tenant.id,
         tenantSlug: tenant.slug,
+        customDomain: tenant.customDomain ?? null,
         brandName: tenant.brandName,
         tagline: tenant.tagline,
         logoUrl: tenant.logoUrl,

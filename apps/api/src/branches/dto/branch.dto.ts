@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsInt,
   IsNumber,
@@ -35,14 +36,19 @@ export class CreateBranchDto {
   @IsOptional()
   @Trim()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(255)
   phone?: string;
 
   @IsOptional()
   @Trim()
   @IsString()
-  @MaxLength(30)
+  @MaxLength(255)
   whatsappNumber?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  whatsappNumbers?: string[];
 
   @IsOptional()
   @Type(() => Number)
@@ -123,14 +129,19 @@ export class UpdateBranchDto {
   @IsOptional()
   @Trim()
   @IsString()
-  @MaxLength(20)
+  @MaxLength(255)
   phone?: string | null;
 
   @IsOptional()
   @Trim()
   @IsString()
-  @MaxLength(30)
+  @MaxLength(255)
   whatsappNumber?: string | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  whatsappNumbers?: string[] | null;
 
   @IsOptional()
   @Type(() => Number)

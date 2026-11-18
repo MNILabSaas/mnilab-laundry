@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { Branch } from '../branches/branch.entity.js';
 import {
@@ -27,7 +27,7 @@ import {
 } from './tenant-profile.entity.js';
 
 @Injectable()
-export class DemoSeedService {
+export class DemoSeedService implements OnModuleInit {
   private readonly logger = new Logger(DemoSeedService.name);
   private readonly seededDemoTenants = new Set<string>();
 
@@ -35,6 +35,17 @@ export class DemoSeedService {
     private readonly dataSource: DataSource,
     private readonly platformClient: PlatformClientService,
   ) {}
+
+  async onModuleInit(): Promise<void> {
+    await this.dataSource
+      .query(`
+        ALTER TABLE tenant_profiles ADD COLUMN IF NOT EXISTS custom_domain varchar(160);
+        ALTER TABLE branches ALTER COLUMN phone TYPE varchar(255);
+        ALTER TABLE branches ALTER COLUMN whatsapp_number TYPE varchar(255);
+        ALTER TABLE branches ADD COLUMN IF NOT EXISTS whatsapp_numbers_json jsonb DEFAULT '[]'::jsonb;
+      `)
+      .catch(() => undefined);
+  }
 
   async ensureDemoSeededBySlug(forceReset = false): Promise<{ tenantId: string }> {
     const resolved = await this.platformClient.resolveTenantBySlug('demo-laundry');
@@ -551,6 +562,7 @@ export class DemoSeedService {
     tenant: {
       id: string;
       slug: string;
+      customDomain?: string | null;
       brandName: string;
       tagline?: string;
       logoUrl?: string | null;
@@ -577,6 +589,7 @@ export class DemoSeedService {
         {
           tenantId,
           slug: params.tenant.slug,
+          customDomain: params.tenant.customDomain ?? null,
           brandName: params.tenant.brandName,
           tagline: params.tenant.tagline || 'The Best Partner in Laundry Service',
           logoUrl: params.tenant.logoUrl ?? null,

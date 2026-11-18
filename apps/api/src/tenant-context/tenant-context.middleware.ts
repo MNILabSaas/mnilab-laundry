@@ -67,6 +67,18 @@ export class TenantContextMiddleware implements NestMiddleware {
         return undefined;
       }
     }
+
+    // Jika diakses dari Custom Domain mandiri (misal berkahlaundry.com atau www.berkahlaundry.id)
+    if (
+      hostname.includes('.') &&
+      hostname !== 'mnilab.my.id' &&
+      hostname !== 'mnilab.id' &&
+      !hostname.endsWith('.ngrok-free.dev') &&
+      !hostname.endsWith('.ngrok-free.app') &&
+      !hostname.endsWith('.ngrok.app')
+    ) {
+      return hostname.replace(/^www\./, '');
+    }
     return undefined;
   }
 
@@ -78,6 +90,7 @@ export class TenantContextMiddleware implements NestMiddleware {
       {
         tenantId: tenant.id,
         slug: tenant.slug,
+        customDomain: tenant.customDomain ?? null,
         brandName: tenant.brandName,
         tagline: tenant.tagline,
         logoUrl: tenant.logoUrl,
@@ -179,6 +192,7 @@ export class TenantContextMiddleware implements NestMiddleware {
     const ctx: ActiveTenantContext = {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
+      customDomain: tenant.customDomain ?? null,
       brandName: tenant.brandName,
       tagline: tenant.tagline,
       logoUrl: tenant.logoUrl,

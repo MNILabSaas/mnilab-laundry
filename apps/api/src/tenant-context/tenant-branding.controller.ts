@@ -71,6 +71,7 @@ export class TenantBrandingController {
     return formatTenantBrandingForClient({
       tenantId: profile.tenantId,
       tenantSlug: profile.slug,
+      customDomain: profile.customDomain ?? null,
       brandName: profile.brandName,
       tagline: profile.tagline,
       logoUrl: profile.logoUrl,

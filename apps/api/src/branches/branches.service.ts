@@ -22,6 +22,39 @@ export class BranchesService {
     private readonly platformClient: PlatformClientService,
   ) {}
 
+  private normalizeWhatsappNumbers(
+    whatsappNumbers?: string[] | null,
+    whatsappNumber?: string | null,
+    phone?: string | null,
+  ): string[] {
+    const rawItems: string[] = [];
+    if (Array.isArray(whatsappNumbers)) {
+      for (const item of whatsappNumbers) {
+        if (typeof item === 'string') {
+          rawItems.push(...item.split(/[,;\n]+/));
+        }
+      }
+    }
+    if (rawItems.length === 0 && typeof whatsappNumber === 'string' && whatsappNumber.trim()) {
+      rawItems.push(...whatsappNumber.split(/[,;\n]+/));
+    }
+    if (rawItems.length === 0 && typeof phone === 'string' && phone.trim()) {
+      rawItems.push(...phone.split(/[,;\n]+/));
+    }
+    const seen = new Set<string>();
+    const cleanList: string[] = [];
+    for (const r of rawItems) {
+      const trimmed = r.trim();
+      if (!trimmed) continue;
+      const digitsKey = trimmed.replace(/[^0-9]/g, '') || trimmed;
+      if (!seen.has(digitsKey)) {
+        seen.add(digitsKey);
+        cleanList.push(trimmed);
+      }
+    }
+    return cleanList;
+  }
+
   listPublic(tenantId: string) {
     return this.branchesRepo.find({
       where: { tenantId, isActive: true },
@@ -82,14 +115,22 @@ export class BranchesService {
       );
     }
 
+    const cleanWaList = this.normalizeWhatsappNumbers(
+      dto.whatsappNumbers,
+      dto.whatsappNumber,
+      dto.phone,
+    );
+    const primaryWa = cleanWaList[0] ?? dto.whatsappNumber ?? dto.phone ?? null;
+
     return this.branchesRepo.save(
       this.branchesRepo.create({
         tenantId: actor.tenantId,
         name: dto.name,
         code,
         address: dto.address ?? null,
-        phone: dto.phone ?? null,
-        whatsappNumber: dto.whatsappNumber ?? null,
+        phone: dto.phone ?? primaryWa,
+        whatsappNumber: primaryWa,
+        whatsappNumbersJson: cleanWaList,
         ironingRate: dto.ironingRate ?? 1100,
         openTime: dto.openTime ?? '08:00',
         closeTime: dto.closeTime ?? '21:00',
@@ -116,7 +157,25 @@ export class BranchesService {
         { isMain: false },
       );
     }
-    Object.assign(branch, dto);
+    const { whatsappNumbers, ...restDto } = dto;
+    Object.assign(branch, restDto);
+    if (
+      whatsappNumbers !== undefined ||
+      dto.whatsappNumber !== undefined ||
+      dto.phone !== undefined
+    ) {
+      const cleanWaList = this.normalizeWhatsappNumbers(
+        whatsappNumbers,
+        dto.whatsappNumber ?? branch.whatsappNumber,
+        dto.phone ?? branch.phone,
+      );
+      branch.whatsappNumbersJson = cleanWaList;
+      branch.whatsappNumber =
+        cleanWaList[0] ?? dto.whatsappNumber ?? branch.whatsappNumber ?? null;
+      if (dto.phone === undefined && !branch.phone && cleanWaList[0]) {
+        branch.phone = cleanWaList[0];
+      }
+    }
     return this.branchesRepo.save(branch);
   }
 

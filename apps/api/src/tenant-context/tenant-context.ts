@@ -17,6 +17,7 @@ export interface PlatformEntitlement {
 export interface ActiveTenantContext {
   tenantId: string;
   tenantSlug: string;
+  customDomain?: string | null;
   brandName: string;
   tagline: string;
   logoUrl: string | null;

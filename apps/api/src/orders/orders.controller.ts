@@ -54,9 +54,10 @@ export class OrdersController {
   @Roles(UserRole.SUPER_OWNER, UserRole.BRANCH_OWNER, UserRole.CASHIER)
   receipt(
     @Param('id', ParseUUIDPipe) id: string,
+    @Query('senderPhone') senderPhone: string | undefined,
     @CurrentUser() actor: LaundryAuthUser,
   ) {
-    return this.ordersService.buildReceipt(id, actor);
+    return this.ordersService.buildReceipt(id, actor, senderPhone);
   }
 
   @Post()

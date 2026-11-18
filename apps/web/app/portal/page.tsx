@@ -17,6 +17,7 @@ import {
   formatRupiah,
   formatTenantSubdomainHost,
   getActiveTenantSlug,
+  getBranchPhoneList,
   getBranchSlug,
   getStoredTenantBranding,
   getStoredUser,
@@ -104,6 +105,7 @@ type PortalTab =
 
 interface ReceiptResponse {
   store: { name: string; address: string; phone: string };
+  availableSenderPhones?: Array<{ phone: string; label: string }>;
   order: OrderDetail;
   whatsappText: string;
   whatsappUrl: string;
@@ -220,6 +222,7 @@ export default function PortalPage() {
   const [custPhone, setCustPhone] = useState('');
   const [custAddress, setCustAddress] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
+  const [selectedSenderWhatsapp, setSelectedSenderWhatsapp] = useState('');
   const [isPayLater, setIsPayLater] = useState(false);
   const [payMethodInput, setPayMethodInput] = useState<PaymentMethod>('CASH');
   const [cashGivenInput, setCashGivenInput] = useState('');
@@ -310,6 +313,7 @@ export default function PortalPage() {
   const [newBranchAddress, setNewBranchAddress] = useState('');
   const [newBranchPhone, setNewBranchPhone] = useState('');
   const [newBranchWhatsapp, setNewBranchWhatsapp] = useState('');
+  const [newBranchWhatsappList, setNewBranchWhatsappList] = useState<string[]>(['']);
   const [newBranchIroningRate, setNewBranchIroningRate] = useState('1100');
   const [newBranchOpenTime, setNewBranchOpenTime] = useState('07:00');
   const [newBranchCloseTime, setNewBranchCloseTime] = useState('21:00');
@@ -332,6 +336,7 @@ export default function PortalPage() {
   const [editBranchAddress, setEditBranchAddress] = useState('');
   const [editBranchPhone, setEditBranchPhone] = useState('');
   const [editBranchWhatsapp, setEditBranchWhatsapp] = useState('');
+  const [editBranchWhatsappList, setEditBranchWhatsappList] = useState<string[]>(['']);
   const [editBranchIroningRate, setEditBranchIroningRate] = useState('1100');
   const [editBranchOpenTime, setEditBranchOpenTime] = useState('07:00');
   const [editBranchCloseTime, setEditBranchCloseTime] = useState('21:00');
@@ -639,7 +644,9 @@ export default function PortalPage() {
     setEditBranchName(br.name);
     setEditBranchAddress(br.address || '');
     setEditBranchPhone(br.phone || '');
-    setEditBranchWhatsapp(br.whatsappNumber || br.phone || '');
+    const waList = getBranchPhoneList(br);
+    setEditBranchWhatsapp(waList[0] || br.whatsappNumber || br.phone || '');
+    setEditBranchWhatsappList(waList.length > 0 ? waList : ['']);
     setEditBranchIroningRate(String(br.ironingRate || 1100));
     setEditBranchOpenTime(br.openTime || '07:00');
     setEditBranchCloseTime(br.closeTime || '21:00');
@@ -707,6 +714,49 @@ export default function PortalPage() {
     const targetBranchId = user?.branchId || selectedBranchId;
     return branches.find((b) => b.id === targetBranchId) || user?.branch || branches[0] || null;
   }, [branches, user, selectedBranchId]);
+
+  // Daftar pilihan Nomor Telp / WhatsApp Pengirim Struk untuk Kasir (Cabang + Perusahaan)
+  const cashierSenderPhoneOptions = useMemo(() => {
+    const opts: Array<{ phone: string; label: string }> = [];
+    const seen = new Set<string>();
+    const addOpt = (rawPhone: string | null | undefined, label: string) => {
+      if (!rawPhone) return;
+      for (const part of rawPhone.split(/[,;\n]+/)) {
+        const trimmed = part.trim();
+        if (!trimmed) continue;
+        const digits = trimmed.replace(/[^0-9]/g, '') || trimmed;
+        if (!seen.has(digits)) {
+          seen.add(digits);
+          opts.push({ phone: trimmed, label });
+        }
+      }
+    };
+    const branchNums = getBranchPhoneList(currentActiveBranch);
+    branchNums.forEach((num, idx) => {
+      addOpt(
+        num,
+        branchNums.length > 1
+          ? `WA Cabang #${idx + 1} (${currentActiveBranch?.name || 'Cabang'})`
+          : `WA Cabang (${currentActiveBranch?.name || 'Cabang'})`,
+      );
+    });
+    addOpt(
+      tenantBranding.whatsappPhone,
+      `WA Utama Perusahaan (${tenantBranding.brandName})`,
+    );
+    return opts;
+  }, [currentActiveBranch, tenantBranding.whatsappPhone, tenantBranding.brandName]);
+
+  useEffect(() => {
+    if (cashierSenderPhoneOptions.length > 0) {
+      const exists = cashierSenderPhoneOptions.some(
+        (o) => o.phone === selectedSenderWhatsapp,
+      );
+      if (!selectedSenderWhatsapp || !exists) {
+        setSelectedSenderWhatsapp(cashierSenderPhoneOptions[0].phone);
+      }
+    }
+  }, [cashierSenderPhoneOptions, selectedSenderWhatsapp]);
 
   const currentPayLaterFee = useMemo(() => {
     return currentActiveBranch?.payLaterFee !== undefined && currentActiveBranch?.payLaterFee !== null
@@ -1002,7 +1052,12 @@ export default function PortalPage() {
       setOrderConfirmModal(null);
 
       // Trigger WhatsApp & receipt
-      const rec = await apiFetch<ReceiptResponse>(`/orders/${created.id}/receipt`);
+      const senderParam = selectedSenderWhatsapp
+        ? `?senderPhone=${encodeURIComponent(selectedSenderWhatsapp)}`
+        : '';
+      const rec = await apiFetch<ReceiptResponse>(
+        `/orders/${created.id}/receipt${senderParam}`,
+      );
       setReceiptModal(rec);
 
       // Automatically trigger WhatsApp receipt
@@ -1025,9 +1080,15 @@ export default function PortalPage() {
     }
   }
 
-  async function openReceipt(orderId: string) {
+  async function openReceipt(orderId: string, customSenderPhone?: string) {
     try {
-      const rec = await apiFetch<ReceiptResponse>(`/orders/${orderId}/receipt`);
+      const phoneToUse = customSenderPhone ?? selectedSenderWhatsapp;
+      const senderParam = phoneToUse
+        ? `?senderPhone=${encodeURIComponent(phoneToUse)}`
+        : '';
+      const rec = await apiFetch<ReceiptResponse>(
+        `/orders/${orderId}/receipt${senderParam}`,
+      );
       setReceiptModal(rec);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal membuka struk');
@@ -1302,13 +1363,20 @@ export default function PortalPage() {
             }
           : null;
 
+      const cleanEditWaList = editBranchWhatsappList
+        .map((n) => n.trim())
+        .filter(Boolean);
+      const primaryEditWa =
+        cleanEditWaList[0] || editBranchWhatsapp.trim() || editBranchPhone.trim() || '';
+
       await apiFetch(`/branches/${editBranchId}`, {
         method: 'PATCH',
         body: JSON.stringify({
           name: editBranchName,
           address: editBranchAddress,
-          phone: editBranchPhone,
-          whatsappNumber: editBranchWhatsapp,
+          phone: editBranchPhone || primaryEditWa,
+          whatsappNumber: primaryEditWa,
+          whatsappNumbers: cleanEditWaList,
           ironingRate: Number(editBranchIroningRate),
           openTime: editBranchOpenTime || '07:00',
           closeTime: editBranchCloseTime || '21:00',
@@ -1345,14 +1413,21 @@ export default function PortalPage() {
             }
           : null;
 
+      const cleanNewWaList = newBranchWhatsappList
+        .map((n) => n.trim())
+        .filter(Boolean);
+      const primaryNewWa =
+        cleanNewWaList[0] || newBranchWhatsapp.trim() || newBranchPhone.trim() || '';
+
       await apiFetch('/branches', {
         method: 'POST',
         body: JSON.stringify({
           name: newBranchName,
           code: newBranchCode,
           address: newBranchAddress || undefined,
-          phone: newBranchPhone || undefined,
-          whatsappNumber: newBranchWhatsapp || newBranchPhone || undefined,
+          phone: newBranchPhone || primaryNewWa || undefined,
+          whatsappNumber: primaryNewWa || undefined,
+          whatsappNumbers: cleanNewWaList,
           ironingRate: Number(newBranchIroningRate || 1100),
           openTime: newBranchOpenTime || '07:00',
           closeTime: newBranchCloseTime || '21:00',
@@ -1373,6 +1448,7 @@ export default function PortalPage() {
       setNewBranchAddress('');
       setNewBranchPhone('');
       setNewBranchWhatsapp('');
+      setNewBranchWhatsappList(['']);
       setNewBranchIroningRate('1100');
       setNewBranchOpenTime('07:00');
       setNewBranchCloseTime('21:00');
@@ -2207,7 +2283,9 @@ export default function PortalPage() {
                       const subdomainHost = formatTenantSubdomainHost(
                         tenantBranding.brandName,
                         tenantBranding.slug,
+                        tenantBranding.customDomain,
                       );
+                      const branchWaNumbers = getBranchPhoneList(b);
                       return (
                         <div
                           key={b.id}
@@ -2235,7 +2313,10 @@ export default function PortalPage() {
                               Link Cek Nota Cabang: <strong>{subdomainHost}/{branchSlug}</strong>
                             </div>
                             <div className="text-[12px] text-[#454745] flex flex-wrap gap-3 pt-0.5">
-                              <span>WA: <strong>{b.whatsappNumber || b.phone || '-'}</strong></span>
+                              <span>
+                                WA Cabang ({branchWaNumbers.length || 1} Nomor):{' '}
+                                <strong>{branchWaNumbers.length > 0 ? branchWaNumbers.join(' • ') : (b.whatsappNumber || b.phone || '-')}</strong>
+                              </span>
                               <span>Tarif Setrika: <strong>{formatRupiah(b.ironingRate || 1100)}/kg</strong></span>
                               <span>
                                 Min. Kg Default:{' '}
@@ -2369,15 +2450,61 @@ export default function PortalPage() {
                     className="w-full bg-[#ffffff] border border-[#868685] rounded-[10px] px-3.5 py-2 text-[13px] text-[#0e0f0c] focus:outline-none focus:border-[#163300]"
                   />
                 </div>
-                <div>
-                  <label className="block text-[12px] font-semibold text-[#0e0f0c] mb-1">Nomor WhatsApp Struk</label>
-                  <input
-                    type="text"
-                    value={newBranchWhatsapp}
-                    onChange={(e) => setNewBranchWhatsapp(e.target.value)}
-                    placeholder="081234567890"
-                    className="w-full bg-[#ffffff] border border-[#868685] rounded-[10px] px-3.5 py-2 text-[13px] text-[#0e0f0c] focus:outline-none focus:border-[#163300]"
-                  />
+                <div className="bg-[#ffffff] rounded-[12px] p-3 space-y-2 border border-[#868685]/40">
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-[12px] font-bold text-[#0e0f0c]">
+                        Daftar Nomor Telp / WhatsApp Struk Cabang
+                      </label>
+                      <span className="text-[10px] text-[#6a6c6a] block">
+                        Bisa tambah lebih dari 1 nomor WA agar kasir punya cadangan saat salah satu nomor terkena limit/ban.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setNewBranchWhatsappList((prev) => [...prev, ''])}
+                      className="text-[11px] font-semibold bg-[#9fe870] hover:bg-[#8ee05c] text-[#163300] px-2.5 py-1 rounded-full shrink-0 cursor-pointer"
+                    >
+                      + Tambah Nomor WA
+                    </button>
+                  </div>
+                  <div className="space-y-1.5">
+                    {newBranchWhatsappList.map((waNum, wIdx) => (
+                      <div key={wIdx} className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={waNum}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setNewBranchWhatsappList((prev) =>
+                              prev.map((item, idx) => (idx === wIdx ? val : item)),
+                            );
+                            if (wIdx === 0) setNewBranchWhatsapp(val);
+                          }}
+                          placeholder={
+                            wIdx === 0
+                              ? 'Nomor WA Utama Cabang (081234567890)'
+                              : `Nomor WA Cadangan #${wIdx + 1} (0813...)`
+                          }
+                          className="flex-1 bg-[#f7f9f6] border border-[#868685] rounded-[8px] px-3 py-1.5 text-[12px] text-[#0e0f0c] focus:outline-none focus:border-[#163300]"
+                        />
+                        {newBranchWhatsappList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNewBranchWhatsappList((prev) =>
+                                prev.filter((_, idx) => idx !== wIdx),
+                              )
+                            }
+                            className="text-xs font-bold text-[#cb272f] hover:bg-[#cb272f]/10 px-2 py-1 rounded cursor-pointer"
+                            title="Hapus nomor ini"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div className="bg-[#ffffff] rounded-[10px] p-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -2608,16 +2735,64 @@ export default function PortalPage() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-[12px] font-semibold text-[#0e0f0c] mb-1">Nomor WhatsApp Struk</label>
-                      <input
-                        type="text"
-                        value={editBranchWhatsapp}
-                        onChange={(e) => setEditBranchWhatsapp(e.target.value)}
-                        placeholder="0812-xxxx-xxxx"
-                        className="w-full bg-[#ffffff] border border-[#868685] rounded-[10px] px-3.5 py-2 text-[14px] text-[#0e0f0c] focus:outline-none focus:border-[#163300]"
-                      />
+                  <div className="space-y-3">
+                    <div className="bg-[#f7f9f6] border border-[#868685]/50 rounded-[12px] p-3.5 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <label className="block text-[12px] font-bold text-[#0e0f0c]">
+                            Daftar Nomor Telp / WhatsApp Struk Cabang (Bisa Lebih dari 1 Nomor)
+                          </label>
+                          <span className="text-[11px] text-[#6a6c6a] block">
+                            Jika diisi &gt;1 nomor WA, kasir dapat memilih nomor pengirim struk saat salah satu nomor terkena limit/ban.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEditBranchWhatsappList((prev) => [...prev, ''])}
+                          className="text-[11px] font-semibold bg-[#9fe870] hover:bg-[#8ee05c] text-[#163300] px-3 py-1 rounded-full shrink-0 cursor-pointer"
+                        >
+                          + Tambah Nomor WA Cabang
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {editBranchWhatsappList.map((waNum, wIdx) => (
+                          <div key={wIdx} className="flex items-center gap-2">
+                            <span className="text-[11px] font-semibold text-[#163300] bg-[#e2f6d5] px-2.5 py-1 rounded-full shrink-0">
+                              WA #{wIdx + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={waNum}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setEditBranchWhatsappList((prev) =>
+                                  prev.map((item, idx) => (idx === wIdx ? val : item)),
+                                );
+                                if (wIdx === 0) setEditBranchWhatsapp(val);
+                              }}
+                              placeholder={
+                                wIdx === 0
+                                  ? 'Nomor WA Utama Cabang (0812-xxxx-xxxx)'
+                                  : `Nomor WA Cadangan #${wIdx + 1} (0813-xxxx-xxxx)`
+                              }
+                              className="flex-1 bg-[#ffffff] border border-[#868685] rounded-[10px] px-3 py-1.5 text-[13px] text-[#0e0f0c] focus:outline-none focus:border-[#163300]"
+                            />
+                            {editBranchWhatsappList.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEditBranchWhatsappList((prev) =>
+                                    prev.filter((_, idx) => idx !== wIdx),
+                                  )
+                                }
+                                className="text-xs font-bold text-[#cb272f] hover:bg-[#cb272f]/10 px-2.5 py-1.5 rounded-lg cursor-pointer"
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
                     <div>
                       <label className="block text-[12px] font-semibold text-[#0e0f0c] mb-1">Tarif Setrika per Kg (Rp)</label>
@@ -3031,17 +3206,64 @@ export default function PortalPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-[13px] font-medium text-[#0e0f0c] mb-1">Nomor WhatsApp Struk</label>
-                  <input
-                    type="text"
-                    value={editBranchWhatsapp}
-                    onChange={(e) => setEditBranchWhatsapp(e.target.value)}
-                    placeholder="081234567890"
-                    className="w-full bg-[#ffffff] border border-[#868685] rounded-[10px] px-3.5 py-2.5 text-[14px] text-[#0e0f0c] focus:outline-none focus:border-[#163300]"
-                  />
-                  <span className="text-[11px] text-[#6a6c6a] mt-1 block">Digunakan untuk kirim struk otomatis via WhatsApp</span>
+              <div className="space-y-4">
+                <div className="bg-[#ffffff] rounded-[16px] p-4 space-y-2.5 border border-[#868685]/30">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-[13px] font-bold text-[#0e0f0c]">
+                        Daftar Nomor Telp / WhatsApp Struk Cabang (Bisa Lebih dari 1 Nomor)
+                      </label>
+                      <span className="text-[11px] text-[#6a6c6a] block">
+                        Tambahkan beberapa nomor WA cabang agar kasir dapat memilih nomor lain jika salah satu nomor WA terkena limit/ban.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditBranchWhatsappList((prev) => [...prev, ''])}
+                      className="text-xs font-semibold bg-[#9fe870] hover:bg-[#8ee05c] text-[#163300] px-3.5 py-1.5 rounded-full shrink-0 cursor-pointer"
+                    >
+                      + Tambah Nomor WA Cabang
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {editBranchWhatsappList.map((waNum, wIdx) => (
+                      <div key={wIdx} className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-[#163300] bg-[#e2f6d5] px-2.5 py-1 rounded-full shrink-0">
+                          WA #{wIdx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          value={waNum}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setEditBranchWhatsappList((prev) =>
+                              prev.map((item, idx) => (idx === wIdx ? val : item)),
+                            );
+                            if (wIdx === 0) setEditBranchWhatsapp(val);
+                          }}
+                          placeholder={
+                            wIdx === 0
+                              ? 'Nomor WA Utama Cabang (081234567890)'
+                              : `Nomor WA Cadangan #${wIdx + 1} (0813...)`
+                          }
+                          className="flex-1 bg-[#e8ebe6]/50 border border-[#868685] rounded-[10px] px-3.5 py-2 text-[14px] text-[#0e0f0c] focus:outline-none focus:border-[#163300]"
+                        />
+                        {editBranchWhatsappList.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditBranchWhatsappList((prev) =>
+                                prev.filter((_, idx) => idx !== wIdx),
+                              )
+                            }
+                            className="text-xs font-bold text-[#cb272f] hover:bg-[#cb272f]/10 px-3 py-2 rounded-lg cursor-pointer"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[13px] font-medium text-[#0e0f0c] mb-1">Tarif Setrika per Kg (Rp)</label>
@@ -3470,6 +3692,47 @@ export default function PortalPage() {
                   </div>
                 )}
 
+                {/* Pilihan Nomor Telp / WhatsApp Cabang / Perusahaan untuk Struk (Anti-Limit / Cadangan) */}
+                {cashierSenderPhoneOptions.length > 0 && (
+                  <div className="bg-[#054d28] rounded-[14px] p-4 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <label className="block text-[12px] font-bold text-[#9fe870] uppercase tracking-wider">
+                          📱 Pilih Nomor Telp / WhatsApp Cabang / Perusahaan pada Struk
+                        </label>
+                        <span className="text-[11px] text-[#e2f6d5] block">
+                          Jika nomor WA utama cabang terkena limit/ban saat kirim struk, pilih nomor WA cadangan lainnya di bawah ini:
+                        </span>
+                      </div>
+                      <span className="text-[11px] bg-[#163300] text-[#9fe870] px-2.5 py-0.5 rounded-full font-semibold">
+                        {cashierSenderPhoneOptions.length} Nomor Tersedia
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {cashierSenderPhoneOptions.map((opt) => {
+                        const active = selectedSenderWhatsapp === opt.phone;
+                        return (
+                          <button
+                            key={opt.phone}
+                            type="button"
+                            onClick={() => setSelectedSenderWhatsapp(opt.phone)}
+                            className={`text-left rounded-[10px] px-3.5 py-2 text-xs transition-all cursor-pointer border ${
+                              active
+                                ? 'bg-[#9fe870] text-[#163300] border-[#9fe870] font-bold shadow-xs'
+                                : 'bg-[#163300] text-[#ffffff] border-[#9fe870]/30 hover:border-[#9fe870]'
+                            }`}
+                          >
+                            <div className="font-mono font-bold text-[13px]">{opt.phone}</div>
+                            <div className={`text-[10px] ${active ? 'text-[#163300]/80' : 'text-[#e2f6d5]'}`}>
+                              {opt.label}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-[13px] font-medium text-[#e2f6d5] mb-1.5">
                     Catatan Pesanan / Transaksi (Opsional)
@@ -3511,9 +3774,15 @@ export default function PortalPage() {
                       <strong className="text-[#0e0f0c]">{orderConfirmModal.customer.name}</strong>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-[#6a6c6a]">No. WhatsApp:</span>
+                      <span className="text-[#6a6c6a]">No. WhatsApp Customer:</span>
                       <span className="font-mono text-[#0e0f0c]">{orderConfirmModal.customer.phone}</span>
                     </div>
+                    {selectedSenderWhatsapp && (
+                      <div className="flex justify-between">
+                        <span className="text-[#6a6c6a]">No. WA Cabang/Company (Struk):</span>
+                        <span className="font-mono font-bold text-[#163300]">{selectedSenderWhatsapp}</span>
+                      </div>
+                    )}
                     {orderConfirmModal.isPayLater && orderConfirmModal.payLaterFee > 0 && (
                       <div className="flex justify-between text-[#163300]">
                         <span>Charge Bayar Nanti:</span>
@@ -6159,6 +6428,31 @@ export default function PortalPage() {
                 </button>
               </div>
             </div>
+
+            {/* Pilihan Nomor WA Pengirim pada Modal Struk jika cabang punya > 1 nomor */}
+            {receiptModal.availableSenderPhones &&
+              receiptModal.availableSenderPhones.length > 1 && (
+                <div className="bg-[#e8ebe6] rounded-[12px] p-3 space-y-1.5 no-print">
+                  <label className="block text-[11px] font-bold text-[#163300]">
+                    📱 Ganti Nomor Telp/WA Cabang pada Struk (Jika Kena Limit/Ban):
+                  </label>
+                  <select
+                    value={receiptModal.store.phone}
+                    onChange={(e) => {
+                      const nextPhone = e.target.value;
+                      setSelectedSenderWhatsapp(nextPhone);
+                      void openReceipt(receiptModal.order.id, nextPhone);
+                    }}
+                    className="w-full bg-[#ffffff] border border-[#868685] rounded-[8px] px-3 py-1.5 text-xs font-mono font-bold text-[#0e0f0c]"
+                  >
+                    {receiptModal.availableSenderPhones.map((opt) => (
+                      <option key={opt.phone} value={opt.phone}>
+                        {opt.phone} — {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
             {/* Layout Struk Responsif */}
             <div
