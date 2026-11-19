@@ -1725,8 +1725,8 @@ export default function PortalPage() {
     tenantBranding.isDemo || tenantBranding.slug === 'demo-laundry',
   );
   const defaultLogo = isDemoTenant
-    ? '/Assets/logoDemoLaundry.webp'
-    : '/Assets/logoLaundry.webp';
+    ? '/assets/logoDemoLaundry.webp'
+    : '/assets/logoLaundry.webp';
   const maxAllowedBranches = Number(tenantBranding.maxBranches || 3);
 
   // 1. Initial hydration guard (avoids SSR hydration mismatch)

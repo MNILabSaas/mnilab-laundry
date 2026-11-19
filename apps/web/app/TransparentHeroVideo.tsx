@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 
 /**
  * TransparentHeroVideo
- * Memutar video KV (/Assets/video.webm) secara native. Background studio abu-abu terang
+ * Memutar video KV (/assets/video.webm) secara native. Background studio abu-abu terang
  * (±RGB 226–250) dinaikkan ke putih murni lewat filter brightness/contrast, lalu
  * mix-blend-mode multiply + mask radial membuat sisa tepinya larut ke kanvas #ffffff.
  */
@@ -30,6 +30,7 @@ export default function TransparentHeroVideo() {
         muted
         playsInline
         preload="auto"
+        poster="/assets/VideoKV.webp"
         className="w-full h-auto max-h-[38svh] lg:max-h-[72svh] object-contain pointer-events-none select-none"
         style={{
           mixBlendMode: 'multiply',
@@ -39,8 +40,7 @@ export default function TransparentHeroVideo() {
           maskImage: 'radial-gradient(ellipse 72% 72% at 50% 50%, #000 62%, transparent 100%)',
         }}
       >
-        <source src="/Assets/video.webm" type="video/webm" />
-        <source src="/Assets/VideoKV.mp4" type="video/mp4" />
+        <source src="/assets/video.webm" type="video/webm" />
       </video>
     </div>
   );

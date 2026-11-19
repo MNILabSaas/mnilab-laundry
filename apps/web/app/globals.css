@@ -135,6 +135,16 @@ body {
 .hover\:text-\[\#054d28\]:hover {
   color: var(--brand-secondary) !important;
 }
+.hover\:text-\[\#9fe870\]:hover {
+  color: var(--brand-primary) !important;
+}
+.hover\:text-\[\#ffffff\]:hover,
+.hover\:text-white:hover {
+  color: #ffffff !important;
+}
+.hover\:bg-\[\#ffffff\]:hover {
+  background-color: #ffffff !important;
+}
 
 /* MNILab Platform Sky Blue / White / Scarlet Utilities */
 .font-ivy {

@@ -40,8 +40,8 @@ export default function TenantSubscriptionLockedScreen({
             src={
               branding.logoUrl ||
               (branding.isDemo
-                ? '/Assets/logoDemoLaundry.webp'
-                : '/Assets/logoLaundry.webp')
+                ? '/assets/logoDemoLaundry.webp'
+                : '/assets/logoLaundry.webp')
             }
             alt={branding.brandName}
             className="w-8 h-8 rounded-full object-cover bg-white border border-line"

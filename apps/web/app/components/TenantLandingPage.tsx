@@ -184,8 +184,8 @@ export default function TenantLandingPage({ branchSlug }: TenantLandingPageProps
     branding.isDemo || branding.slug === 'demo-laundry',
   );
   const defaultLogo = isDemoTenant
-    ? '/Assets/logoDemoLaundry.webp'
-    : '/Assets/logoLaundry.webp';
+    ? '/assets/logoDemoLaundry.webp'
+    : '/assets/logoLaundry.webp';
 
   // Dalam mode Demo, user bisa mensimulasikan kondisi "Belum Bikin Cabang" (0 cabang) vs "Sudah Bikin Cabang"
   const effectiveBranches = useMemo(

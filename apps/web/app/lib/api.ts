@@ -759,7 +759,7 @@ export const BAGUS_LAUNDRY_DEFAULT_BRANDING: TenantBranding = {
   slug: 'bagus-laundry',
   brandName: 'Bagus Laundry',
   tagline: 'The Best Partner in Laundry Service',
-  logoUrl: '/Assets/logoLaundry.webp',
+  logoUrl: '/assets/logoLaundry.webp',
   primaryColor: '#9fe870',
   primaryHoverColor: '#8ee05c',
   darkColor: '#163300',
@@ -776,7 +776,7 @@ export const DEMO_LAUNDRY_DEFAULT_BRANDING: TenantBranding = {
   slug: 'demo-laundry',
   brandName: 'Lumière Atelier Laundry (DEMO)',
   tagline: 'Premium Garment Care & Steam Ironing',
-  logoUrl: '/Assets/logoDemoLaundry.webp',
+  logoUrl: '/assets/logoDemoLaundry.webp',
   primaryColor: '#e0a96d',
   primaryHoverColor: '#cbaf80',
   darkColor: '#1a140e',
@@ -1039,6 +1039,18 @@ export function applyTenantThemeToDom(branding: TenantBranding): void {
     branding.secondaryColor || '#054d28',
   );
   document.title = `${branding.brandName} — ${branding.tagline || 'Layanan Laundry Profesional'}`;
+
+  const iconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+  if (iconLink) {
+    const customTenantLogo =
+      !branding.isDemo &&
+      !branding.isDefault &&
+      branding.logoUrl &&
+      !branding.logoUrl.toLowerCase().includes('logolaundry')
+        ? branding.logoUrl
+        : '/assets/newLogo/logoOnlyNoBackground.webp';
+    iconLink.href = customTenantLogo;
+  }
 }
 
 export function setAuthSession(

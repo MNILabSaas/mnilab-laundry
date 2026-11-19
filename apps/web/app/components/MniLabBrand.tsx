@@ -19,11 +19,11 @@ const SIZE_CLASSES: Record<NonNullable<TmiLabLogoProps['size']>, string> = {
 export function TmiLabLogo({ className = '', size = 'md' }: TmiLabLogoProps) {
   return (
     <img
-      src="/Assets/newLogo/MNILogoNoBackground.webp"
+      src="/assets/newLogo/MNILogoNoBackground.webp"
       onError={(e) => {
         const target = e.currentTarget;
-        if (!target.src.endsWith('/Assets/LogoSaas-crop.png')) {
-          target.src = '/Assets/LogoSaas-crop.png';
+        if (!target.src.endsWith('/assets/LogoSaas-crop.png')) {
+          target.src = '/assets/LogoSaas-crop.png';
         }
       }}
       alt="MNILab — Digital Product System"
@@ -79,11 +79,11 @@ export function TmiLabLuxuryLoader({
           />
 
           <img
-            src="/Assets/newLogo/logoOnlyNoBackground.webp"
+            src="/assets/newLogo/logoOnlyNoBackground.webp"
             onError={(e) => {
               const target = e.currentTarget;
-              if (!target.src.endsWith('/Assets/loadingSaas-crop.png')) {
-                target.src = '/Assets/loadingSaas-crop.png';
+              if (!target.src.endsWith('/assets/loadingSaas-crop.png')) {
+                target.src = '/assets/loadingSaas-crop.png';
               }
             }}
             alt="MNILab Loading Symbol"
