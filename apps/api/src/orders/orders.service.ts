@@ -24,6 +24,7 @@ import {
 } from '../common/utils/money.js';
 import { generateOrderNumber } from '../common/utils/order-number.js';
 import { normalizeCustomerPhone } from '../common/utils/phone.js';
+import { assertPaymentMethodAvailable } from '../common/utils/qris-feature.js';
 import {
   requireActorWriteBranch,
   resolveActorBranchScope,
@@ -311,6 +312,10 @@ export class OrdersService {
         dto.initialPaymentMethod ??
         PaymentMethod.CASH;
 
+      if (!isPayLater && initialPay > 0) {
+        assertPaymentMethodAvailable(initialPayMethod);
+      }
+
       if (compareMoney(initialPay, grandTotal) > 0) {
         throw new BadRequestException('Pembayaran awal melebihi total tagihan');
       }
@@ -574,7 +579,7 @@ export class OrdersService {
       activeCtx?.tenantSlug,
       activeCtx?.brandName,
       order.branch,
-      activeCtx?.customDomain,
+      activeCtx?.customDomainVerified ? activeCtx?.customDomain : null,
     );
     if (trackingUrl) {
       lines.push(

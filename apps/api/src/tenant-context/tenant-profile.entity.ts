@@ -28,6 +28,25 @@ export interface TenantThemeConfig {
   landingConfig?: TenantLandingConfig;
 }
 
+export interface TenantBankAccountItem {
+  id?: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  isPrimary?: boolean;
+}
+
+export interface TenantQrisConfig {
+  provider?: string;
+  merchantId?: string;
+  nmid?: string;
+  terminalId?: string;
+  staticPayload?: string;
+  dynamicEnabled?: boolean;
+  mdrPercent?: number;
+  meta?: Record<string, string | number | boolean | null>;
+}
+
 export const DEFAULT_LAUNDRY_THEME: TenantThemeConfig = {
   primaryColor: '#9fe870',
   primaryHoverColor: '#8ee05c',
@@ -49,8 +68,18 @@ export class TenantProfile {
   @Column({ type: 'varchar', length: 80 })
   slug: string;
 
+  @Index('UQ_tenant_profiles_custom_domain', {
+    unique: true,
+    where: '"custom_domain" IS NOT NULL',
+  })
   @Column({ name: 'custom_domain', type: 'varchar', length: 160, nullable: true })
   customDomain: string | null;
+
+  @Column({ name: 'custom_domain_verified', type: 'boolean', default: false })
+  customDomainVerified: boolean;
+
+  @Column({ name: 'custom_domain_verified_at', type: 'timestamptz', nullable: true })
+  customDomainVerifiedAt: Date | null;
 
   @Column({ name: 'brand_name', type: 'varchar', length: 120 })
   brandName: string;
@@ -74,6 +103,16 @@ export class TenantProfile {
 
   @Column({ name: 'whatsapp_phone', type: 'varchar', length: 30, nullable: true })
   whatsappPhone: string | null;
+
+  @Column({
+    name: 'bank_accounts_json',
+    type: 'jsonb',
+    default: () => `'[]'::jsonb`,
+  })
+  bankAccountsJson: TenantBankAccountItem[];
+
+  @Column({ name: 'qris_config_json', type: 'jsonb', nullable: true })
+  qrisConfigJson: TenantQrisConfig | null;
 
   @Column({ name: 'is_demo', type: 'boolean', default: false })
   isDemo: boolean;

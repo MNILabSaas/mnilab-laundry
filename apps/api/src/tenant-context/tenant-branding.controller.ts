@@ -72,11 +72,13 @@ export class TenantBrandingController {
       tenantId: profile.tenantId,
       tenantSlug: profile.slug,
       customDomain: profile.customDomain ?? null,
+      customDomainVerified: Boolean(profile.customDomainVerified),
       brandName: profile.brandName,
       tagline: profile.tagline,
       logoUrl: profile.logoUrl,
       theme: profile.themeConfigJson ?? DEFAULT_LAUNDRY_THEME,
       whatsappPhone: profile.whatsappPhone,
+      bankAccounts: profile.bankAccountsJson ?? [],
       isDemo: profile.isDemo,
       entitlement: {
         tenantId: profile.tenantId,

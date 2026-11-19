@@ -698,16 +698,16 @@ export function PayLaterSettlementModal({
             </button>
             <button
               type="button"
-              onClick={() => setMethod('QRIS')}
-              className={`flex-1 text-[13px] font-semibold py-2 rounded-full cursor-pointer transition-colors ${
-                method === 'QRIS'
-                  ? 'bg-[#163300] text-[#9fe870]'
-                  : 'text-[#454745] hover:text-[#163300]'
-              }`}
+              disabled
+              title="Pembayaran QRIS sedang dalam pemeliharaan (integrasi Dynamic QRIS Bank Nobu)"
+              className="flex-1 text-[12px] font-semibold py-2 rounded-full bg-[#e8ebe6] text-[#6a6c6a] cursor-not-allowed"
             >
-              QRIS
+              🔧 QRIS (Under Maintenance)
             </button>
           </div>
+          <p className="text-[11px] text-[#6a6c6a] text-center">
+            * Pembayaran Dynamic QRIS Bank Nobu sedang dalam proses aktivasi API.
+          </p>
 
           {method === 'CASH' && (
             <div className="grid grid-cols-2 gap-3">

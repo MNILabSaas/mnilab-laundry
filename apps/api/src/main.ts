@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module.js';
+import { AllowedOriginService } from './common/security/allowed-origin.service.js';
 import { GlobalSecurityExceptionFilter } from './common/security/security-exception.filter.js';
 import { securityMiddleware } from './common/security/security-headers.middleware.js';
 
@@ -13,32 +14,22 @@ async function bootstrap() {
   app.useBodyParser('urlencoded', { limit: '2mb', extended: true });
   app.use(securityMiddleware);
 
-  const configuredOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim().toLowerCase()).filter(Boolean)
-    : [];
-  const defaultOrigins = ['http://localhost:3002', 'http://127.0.0.1:3002'];
-  const allowedOrigins = new Set([...configuredOrigins, ...defaultOrigins]);
+  const allowedOriginService = app.get(AllowedOriginService);
 
   app.enableCors({
     origin: (requestOrigin, callback) => {
-      if (!requestOrigin) {
-        callback(null, true);
-        return;
-      }
-      const norm = requestOrigin.trim().toLowerCase();
-      const isExplicitlyAllowed = allowedOrigins.has(norm);
-      const isMniLabSubdomain =
-        /^https?:\/\/([a-z0-9-]+\.)?mnilab\.my\.id(:\d+)?$/.test(norm) ||
-        /^https?:\/\/([a-z0-9-]+\.)?mnilab\.id(:\d+)?$/.test(norm);
-      const isDevSubdomain =
-        process.env.NODE_ENV !== 'production' &&
-        /^https?:\/\/([a-z0-9-]+\.)?(localhost|127\.0\.0\.1)(:\d+)?$/.test(norm);
-
-      if (isExplicitlyAllowed || isMniLabSubdomain || isDevSubdomain) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Akses CORS ditolak untuk origin: ${requestOrigin}`));
-      }
+      void allowedOriginService
+        .validateOrigin(requestOrigin)
+        .then((result) => {
+          if (result.allowed) {
+            callback(null, result.normalizedOrigin ?? true);
+          } else {
+            callback(null, false);
+          }
+        })
+        .catch(() => {
+          callback(null, false);
+        });
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],

@@ -2,6 +2,7 @@ import { Controller, Get, Optional, Param } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Public } from '../common/auth/auth.decorators.js';
+import { isQrisPaymentEnabled } from '../common/utils/qris-feature.js';
 import { PlatformClientService } from '../platform/platform-client.service.js';
 import { DemoSeedService } from './demo-seed.service.js';
 import {
@@ -27,7 +28,8 @@ export function formatTenantBrandingForClient(
     id: ctx.tenantId,
     tenantId: ctx.tenantId,
     slug: ctx.tenantSlug,
-    customDomain: ctx.customDomain ?? null,
+    customDomain: ctx.customDomainVerified ? (ctx.customDomain ?? null) : null,
+    customDomainVerified: Boolean(ctx.customDomainVerified),
     brandName: ctx.brandName,
     tagline: ctx.tagline || 'The Best Partner in Laundry Service',
     logoUrl: ctx.logoUrl,
@@ -40,6 +42,8 @@ export function formatTenantBrandingForClient(
     cityOrRegion: extra?.cityOrRegion ?? 'Surabaya',
     defaultAddress: extra?.defaultAddress ?? null,
     whatsappPhone: ctx.whatsappPhone,
+    bankAccounts: ctx.bankAccounts ?? [],
+    qrisPaymentEnabled: isQrisPaymentEnabled(),
     isDefault: extra?.isDefault ?? ctx.tenantSlug === 'bagus-laundry',
     isDemo: Boolean(ctx.isDemo || ctx.tenantSlug === 'demo-laundry'),
     isActive: !blocked,
@@ -115,7 +119,8 @@ export class TenantsPublicController {
         id: p.tenantId,
         tenantId: p.tenantId,
         slug: p.slug,
-        customDomain: p.customDomain ?? null,
+        customDomain: p.customDomainVerified ? (p.customDomain ?? null) : null,
+        customDomainVerified: Boolean(p.customDomainVerified),
         brandName: p.brandName,
         tagline: p.tagline || 'The Best Partner in Laundry Service',
         logoUrl: p.logoUrl,
@@ -128,6 +133,7 @@ export class TenantsPublicController {
         cityOrRegion: 'Surabaya' as string | null,
         defaultAddress: null as string | null,
         whatsappPhone: p.whatsappPhone,
+        bankAccounts: p.bankAccountsJson ?? [],
         isDefault: p.slug === 'bagus-laundry',
         isDemo: Boolean(p.isDemo || p.slug === 'demo-laundry'),
         isActive: !blocked,
@@ -164,11 +170,18 @@ export class TenantsPublicController {
         tenantId: tenant.id,
         slug: tenant.slug,
         customDomain: tenant.customDomain ?? null,
+        customDomainVerified: Boolean(tenant.customDomainVerified),
+        customDomainVerifiedAt: tenant.customDomainVerifiedAt
+          ? new Date(tenant.customDomainVerifiedAt)
+          : null,
         brandName: tenant.brandName,
         tagline: tenant.tagline,
         logoUrl: tenant.logoUrl,
         themeConfigJson: tenant.theme ?? DEFAULT_LAUNDRY_THEME,
         whatsappPhone: tenant.whatsappPhone,
+        bankAccountsJson:
+          tenant.bankAccountsJson ?? tenant.bankAccounts ?? [],
+        qrisConfigJson: tenant.qrisConfigJson ?? null,
         isDemo: tenant.isDemo,
         subscriptionStatus: entitlement.status,
         maxBranches: entitlement.limits?.maxBranches ?? 3,
@@ -189,11 +202,13 @@ export class TenantsPublicController {
         tenantId: tenant.id,
         tenantSlug: tenant.slug,
         customDomain: tenant.customDomain ?? null,
+        customDomainVerified: Boolean(tenant.customDomainVerified),
         brandName: tenant.brandName,
         tagline: tenant.tagline,
         logoUrl: tenant.logoUrl,
         theme: tenant.theme ?? DEFAULT_LAUNDRY_THEME,
         whatsappPhone: tenant.whatsappPhone,
+        bankAccounts: tenant.bankAccountsJson ?? tenant.bankAccounts ?? [],
         isDemo: tenant.isDemo,
         entitlement,
       },

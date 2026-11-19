@@ -1,5 +1,8 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import type { TenantThemeConfig } from './tenant-profile.entity.js';
+import type {
+  TenantBankAccountItem,
+  TenantThemeConfig,
+} from './tenant-profile.entity.js';
 
 export interface PlatformEntitlement {
   tenantId: string;
@@ -18,11 +21,13 @@ export interface ActiveTenantContext {
   tenantId: string;
   tenantSlug: string;
   customDomain?: string | null;
+  customDomainVerified?: boolean;
   brandName: string;
   tagline: string;
   logoUrl: string | null;
   theme: TenantThemeConfig;
   whatsappPhone: string | null;
+  bankAccounts?: TenantBankAccountItem[];
   isDemo: boolean;
   entitlement: PlatformEntitlement;
 }

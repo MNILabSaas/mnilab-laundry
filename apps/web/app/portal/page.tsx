@@ -72,6 +72,7 @@ import {
   RequestPayoutModal,
   StaffIroningPayoutHistorySection,
 } from './IroningPayoutSection';
+import { OwnerQrisWithdrawalSection } from './QrisWithdrawalSection';
 import {
   DemoSandboxBar,
   getStoredDemoSandboxBranding,
@@ -101,7 +102,8 @@ type PortalTab =
   | 'OWNER_ATTENDANCE'
   | 'STAFF_LEAVES'
   | 'OWNER_LEAVES'
-  | 'OWNER_IRONING_PAYOUTS';
+  | 'OWNER_IRONING_PAYOUTS'
+  | 'OWNER_QRIS_WITHDRAWALS';
 
 interface ReceiptResponse {
   store: { name: string; address: string; phone: string };
@@ -1661,6 +1663,7 @@ export default function PortalPage() {
     if (user.role === 'SUPER_OWNER') {
       return [
         { id: 'OWNER_REPORTS' as PortalTab, label: 'Laporan Keuangan' },
+        { id: 'OWNER_QRIS_WITHDRAWALS' as PortalTab, label: 'Pencairan QRIS Cabang' },
         { id: 'OWNER_EXPENSES' as PortalTab, label: 'Persetujuan Pengeluaran', badge: pendingExpensesCount },
         { id: 'OWNER_IRONING_PAYOUTS' as PortalTab, label: 'Upah Setrika', badge: pendingIroningPayoutsCount },
         { id: 'ORDERS_LIST' as PortalTab, label: 'Monitoring Pesanan' },
@@ -1676,6 +1679,7 @@ export default function PortalPage() {
     if (user.role === 'BRANCH_OWNER' || user.role === 'OWNER') {
       return [
         { id: 'OWNER_REPORTS' as PortalTab, label: 'Laporan Keuangan' },
+        { id: 'OWNER_QRIS_WITHDRAWALS' as PortalTab, label: 'Pencairan QRIS Cabang' },
         { id: 'OWNER_EXPENSES' as PortalTab, label: 'Persetujuan Pengeluaran', badge: pendingExpensesCount },
         { id: 'OWNER_IRONING_PAYOUTS' as PortalTab, label: 'Upah Setrika', badge: pendingIroningPayoutsCount },
         { id: 'ORDERS_LIST' as PortalTab, label: 'Monitoring Pesanan' },
@@ -3632,29 +3636,47 @@ export default function PortalPage() {
                   </div>
 
                   {!isPayLater && (
-                    <div className="flex items-center gap-2 bg-[#054d28] p-1 rounded-full">
-                      <button
-                        type="button"
-                        onClick={() => setPayMethodInput('CASH')}
-                        className={`text-[13px] font-semibold px-5 py-2 rounded-full cursor-pointer transition-colors ${
-                          payMethodInput === 'CASH'
-                            ? 'bg-[#9fe870] text-[#163300]'
-                            : 'text-[#ffffff] hover:text-[#9fe870]'
-                        }`}
-                      >
-                        Tunai (CASH)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPayMethodInput('QRIS')}
-                        className={`text-[13px] font-semibold px-5 py-2 rounded-full cursor-pointer transition-colors ${
-                          payMethodInput === 'QRIS'
-                            ? 'bg-[#9fe870] text-[#163300]'
-                            : 'text-[#ffffff] hover:text-[#9fe870]'
-                        }`}
-                      >
-                        QRIS
-                      </button>
+                    <div className="flex flex-col items-end gap-1.5">
+                      <div className="flex items-center gap-2 bg-[#054d28] p-1 rounded-full">
+                        <button
+                          type="button"
+                          onClick={() => setPayMethodInput('CASH')}
+                          className={`text-[13px] font-semibold px-5 py-2 rounded-full cursor-pointer transition-colors ${
+                            payMethodInput === 'CASH'
+                              ? 'bg-[#9fe870] text-[#163300]'
+                              : 'text-[#ffffff] hover:text-[#9fe870]'
+                          }`}
+                        >
+                          Tunai (CASH)
+                        </button>
+                        {tenantBranding.qrisPaymentEnabled ? (
+                          <button
+                            type="button"
+                            onClick={() => setPayMethodInput('QRIS')}
+                            className={`text-[13px] font-semibold px-5 py-2 rounded-full cursor-pointer transition-colors ${
+                              payMethodInput === 'QRIS'
+                                ? 'bg-[#9fe870] text-[#163300]'
+                                : 'text-[#ffffff] hover:text-[#9fe870]'
+                            }`}
+                          >
+                            QRIS (Bank Nobu)
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            disabled
+                            title="Pembayaran QRIS sedang dalam pemeliharaan (integrasi Dynamic QRIS Bank Nobu)"
+                            className="text-[12px] font-semibold px-4 py-2 rounded-full bg-[#163300]/70 text-[#e2f6d5]/70 border border-[#9fe870]/30 cursor-not-allowed flex items-center gap-1.5"
+                          >
+                            <span>🔧 QRIS (Under Maintenance)</span>
+                          </button>
+                        )}
+                      </div>
+                      {!tenantBranding.qrisPaymentEnabled && (
+                        <span className="text-[11px] text-[#e2f6d5]/90">
+                          * Pembayaran Dynamic QRIS (Bank Nobu) sedang dalam proses aktivasi API. Gunakan Tunai untuk sementara.
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -6370,6 +6392,20 @@ export default function PortalPage() {
             onSuccessMsg={(msg) => setSuccessMsg(msg)}
             onErrorMsg={(msg) => setErrorMsg(msg)}
             onUpdate={() => void loadData()}
+          />
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB: SUPER OWNER & OWNER - REKONSILIASI & PENCAIRAN QRIS CABANG */}
+        {/* ============================================================== */}
+        {activeTab === 'OWNER_QRIS_WITHDRAWALS' && (
+          <OwnerQrisWithdrawalSection
+            isSuperOwner={isSuperOwner}
+            selectedBranchId={selectedBranchId}
+            branches={branches}
+            onSelectBranch={(id) => setSelectedBranchId(id)}
+            onSuccessMsg={(msg) => setSuccessMsg(msg)}
+            onErrorMsg={(msg) => setErrorMsg(msg)}
           />
         )}
       </main>

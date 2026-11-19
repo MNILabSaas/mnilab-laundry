@@ -10,6 +10,7 @@ import { LeaveRequest } from '../leaves/leave-request.entity.js';
 import { LaundryOrderItem } from '../orders/laundry-order-item.entity.js';
 import { LaundryOrder } from '../orders/laundry-order.entity.js';
 import { Payment } from '../payments/payment.entity.js';
+import { QrisWithdrawal } from '../payments/qris-withdrawal.entity.js';
 import { LaundryStaff } from '../staff/laundry-staff.entity.js';
 import { TenantProfile } from '../tenant-context/tenant-profile.entity.js';
 import { IroningPayout } from '../workflow/ironing-payout.entity.js';
@@ -27,6 +28,7 @@ export const LAUNDRY_ENTITIES = [
   OrderStatusHistory,
   IroningPayout,
   Payment,
+  QrisWithdrawal,
   ExpenseCategory,
   Expense,
   CashSettlement,

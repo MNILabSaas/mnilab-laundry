@@ -40,9 +40,41 @@ export class DemoSeedService implements OnModuleInit {
     await this.dataSource
       .query(`
         ALTER TABLE tenant_profiles ADD COLUMN IF NOT EXISTS custom_domain varchar(160);
+        ALTER TABLE tenant_profiles ADD COLUMN IF NOT EXISTS custom_domain_verified boolean DEFAULT false;
+        ALTER TABLE tenant_profiles ADD COLUMN IF NOT EXISTS custom_domain_verified_at timestamptz;
+        ALTER TABLE tenant_profiles ADD COLUMN IF NOT EXISTS bank_accounts_json jsonb DEFAULT '[]'::jsonb;
+        ALTER TABLE tenant_profiles ADD COLUMN IF NOT EXISTS qris_config_json jsonb;
+        CREATE UNIQUE INDEX IF NOT EXISTS "UQ_tenant_profiles_custom_domain"
+          ON tenant_profiles (custom_domain)
+          WHERE custom_domain IS NOT NULL;
         ALTER TABLE branches ALTER COLUMN phone TYPE varchar(255);
         ALTER TABLE branches ALTER COLUMN whatsapp_number TYPE varchar(255);
         ALTER TABLE branches ADD COLUMN IF NOT EXISTS whatsapp_numbers_json jsonb DEFAULT '[]'::jsonb;
+        CREATE TABLE IF NOT EXISTS qris_withdrawals (
+          id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id uuid NOT NULL,
+          branch_id uuid NOT NULL REFERENCES branches(id) ON DELETE CASCADE,
+          period_month int NOT NULL,
+          period_year int NOT NULL,
+          amount numeric(12,2) NOT NULL,
+          total_transactions int NOT NULL DEFAULT 0,
+          status varchar(20) NOT NULL DEFAULT 'PENDING',
+          requested_by_staff_id uuid,
+          requested_by_name varchar(120),
+          owner_notes text,
+          target_bank_account_json jsonb,
+          transfer_proof text,
+          admin_notes text,
+          reviewed_by_email varchar(150),
+          reviewed_at timestamptz,
+          rejection_reason text,
+          gateway_meta_json jsonb,
+          created_at timestamptz NOT NULL DEFAULT now(),
+          updated_at timestamptz NOT NULL DEFAULT now()
+        );
+        ALTER TABLE payments ADD COLUMN IF NOT EXISTS qris_withdrawal_id uuid;
+        ALTER TABLE payments ADD COLUMN IF NOT EXISTS qris_settled_at timestamptz;
+        ALTER TABLE payments ADD COLUMN IF NOT EXISTS qris_meta_json jsonb;
       `)
       .catch(() => undefined);
   }
@@ -563,11 +595,27 @@ export class DemoSeedService implements OnModuleInit {
       id: string;
       slug: string;
       customDomain?: string | null;
+      customDomainVerified?: boolean;
+      customDomainVerifiedAt?: string | null;
       brandName: string;
       tagline?: string;
       logoUrl?: string | null;
       theme?: Record<string, string>;
       whatsappPhone?: string | null;
+      bankAccounts?: Array<{
+        id?: string;
+        bankName: string;
+        accountNumber: string;
+        accountHolder: string;
+        isPrimary?: boolean;
+      }>;
+      bankAccountsJson?: Array<{
+        id?: string;
+        bankName: string;
+        accountNumber: string;
+        accountHolder: string;
+        isPrimary?: boolean;
+      }>;
       isDemo?: boolean;
     };
     maxBranches?: number;
@@ -590,6 +638,10 @@ export class DemoSeedService implements OnModuleInit {
           tenantId,
           slug: params.tenant.slug,
           customDomain: params.tenant.customDomain ?? null,
+          customDomainVerified: Boolean(params.tenant.customDomainVerified),
+          customDomainVerifiedAt: params.tenant.customDomainVerifiedAt
+            ? new Date(params.tenant.customDomainVerifiedAt)
+            : null,
           brandName: params.tenant.brandName,
           tagline: params.tenant.tagline || 'The Best Partner in Laundry Service',
           logoUrl: params.tenant.logoUrl ?? null,
@@ -597,6 +649,8 @@ export class DemoSeedService implements OnModuleInit {
             (params.tenant.theme as unknown as typeof DEFAULT_LAUNDRY_THEME) ??
             DEFAULT_LAUNDRY_THEME,
           whatsappPhone: params.tenant.whatsappPhone ?? null,
+          bankAccountsJson:
+            params.tenant.bankAccountsJson ?? params.tenant.bankAccounts ?? [],
           isDemo: Boolean(params.tenant.isDemo),
           subscriptionStatus: 'ACTIVE',
           maxBranches: params.maxBranches ?? 3,

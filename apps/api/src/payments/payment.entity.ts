@@ -68,6 +68,16 @@ export class Payment {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
+  @Index('IDX_payments_qris_withdrawal')
+  @Column({ name: 'qris_withdrawal_id', type: 'uuid', nullable: true })
+  qrisWithdrawalId: string | null;
+
+  @Column({ name: 'qris_settled_at', type: 'timestamptz', nullable: true })
+  qrisSettledAt: Date | null;
+
+  @Column({ name: 'qris_meta_json', type: 'jsonb', nullable: true })
+  qrisMetaJson: Record<string, unknown> | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

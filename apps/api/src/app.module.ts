@@ -13,6 +13,7 @@ import {
 import { AuthModule } from './auth/auth.module.js';
 import { BranchesModule } from './branches/branches.module.js';
 import { CashSettlementsModule } from './cash-settlements/cash-settlements.module.js';
+import { AllowedOriginService } from './common/security/allowed-origin.service.js';
 import { securityMiddleware } from './common/security/security-headers.middleware.js';
 import { CustomersModule } from './customers/customers.module.js';
 import { buildLaundryDataSourceOptions } from './database/database.config.js';
@@ -94,11 +95,13 @@ import { WorkflowModule } from './workflow/workflow.module.js';
   ],
   providers: [
     DemoSeedService,
+    AllowedOriginService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: LaundryJwtAuthGuard },
     { provide: APP_GUARD, useClass: EntitlementAndDemoGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
+  exports: [AllowedOriginService],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

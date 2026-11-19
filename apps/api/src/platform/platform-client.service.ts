@@ -7,12 +7,18 @@ import {
 import type {
   PlatformEntitlement,
 } from '../tenant-context/tenant-context.js';
-import type { TenantThemeConfig } from '../tenant-context/tenant-profile.entity.js';
+import type {
+  TenantBankAccountItem,
+  TenantQrisConfig,
+  TenantThemeConfig,
+} from '../tenant-context/tenant-profile.entity.js';
 
 export interface PlatformTenantBranding {
   id: string;
   slug: string;
   customDomain?: string | null;
+  customDomainVerified?: boolean;
+  customDomainVerifiedAt?: string | null;
   brandName: string;
   tagline: string;
   logoUrl: string | null;
@@ -20,6 +26,9 @@ export interface PlatformTenantBranding {
   cityOrRegion: string | null;
   defaultAddress: string | null;
   whatsappPhone: string | null;
+  bankAccounts?: TenantBankAccountItem[];
+  bankAccountsJson?: TenantBankAccountItem[];
+  qrisConfigJson?: TenantQrisConfig | null;
   status: string;
   isDemo: boolean;
   isActive: boolean;
@@ -113,9 +122,16 @@ export class PlatformClientService {
     return parsed as T;
   }
 
-  invalidateTenantCache(tenantId?: string, slug?: string) {
+  invalidateTenantCache(
+    tenantId?: string,
+    slug?: string,
+    customDomain?: string | null,
+  ) {
     if (tenantId) this.entitlementCache.delete(tenantId);
     if (slug) this.slugCache.delete(slug.toLowerCase());
+    if (customDomain) {
+      this.slugCache.delete(customDomain.trim().toLowerCase().replace(/^www\./, ''));
+    }
   }
 
   async resolveTenantBySlug(
@@ -245,6 +261,7 @@ export class PlatformClientService {
       cityOrRegion?: string | null;
       defaultAddress?: string | null;
       themeConfigJson?: Partial<TenantThemeConfig>;
+      bankAccountsJson?: TenantBankAccountItem[];
     },
   ) {
     return this.request<PlatformTenantBranding>(

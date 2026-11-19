@@ -537,6 +537,84 @@ export interface IroningHistoryItem {
   ironingEmployeeName: string | null;
 }
 
+export interface TenantBankAccountItem {
+  id?: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  isPrimary?: boolean;
+}
+
+export interface QrisBranchTransactionItem {
+  id: string;
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  amount: number;
+  paidAt: string | null;
+  reference: string | null;
+  qrisWithdrawalId: string | null;
+  qrisSettledAt: string | null;
+  withdrawalStatus: 'UNWITHDRAWN' | 'PENDING' | 'APPROVED';
+}
+
+export interface QrisBranchReconciliationSummary {
+  branchId: string;
+  branchName: string;
+  branchCode: string;
+  isMain: boolean;
+  periodMonth: number;
+  periodYear: number;
+  totalQrisCollected: number;
+  withdrawnApprovedAmount: number;
+  pendingWithdrawalAmount: number;
+  availableToWithdrawAmount: number;
+  totalTransactions: number;
+  unwithdrawnTransactionsCount: number;
+  canRequestWithdrawal: boolean;
+  transactions: QrisBranchTransactionItem[];
+}
+
+export interface QrisWithdrawalItem {
+  id: string;
+  tenantId: string;
+  branchId: string;
+  branchName: string;
+  branchCode: string;
+  periodMonth: number;
+  periodYear: number;
+  amount: number;
+  totalTransactions: number;
+  status: ExpenseApprovalStatus;
+  requestedByName: string;
+  ownerNotes: string | null;
+  targetBankAccount: TenantBankAccountItem | null;
+  transferProof: string | null;
+  adminNotes: string | null;
+  reviewedByEmail: string | null;
+  reviewedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+}
+
+export interface QrisReconciliationResponse {
+  month: number;
+  year: number;
+  qrisPaymentEnabled?: boolean;
+  qrisProvider?: string;
+  qrisMaintenanceMessage?: string;
+  bankAccounts: TenantBankAccountItem[];
+  summary: {
+    totalQrisCollected: number;
+    withdrawnApprovedAmount: number;
+    pendingWithdrawalAmount: number;
+    availableToWithdrawAmount: number;
+    totalTransactions: number;
+  };
+  branchSummaries: QrisBranchReconciliationSummary[];
+  withdrawals: QrisWithdrawalItem[];
+}
+
 export interface TenantBranding {
   id: string;
   slug: string;
@@ -552,6 +630,8 @@ export interface TenantBranding {
   cityOrRegion: string | null;
   defaultAddress: string | null;
   whatsappPhone: string | null;
+  bankAccounts?: TenantBankAccountItem[];
+  qrisPaymentEnabled?: boolean;
   isDefault: boolean;
   isDemo?: boolean;
   isActive?: boolean;

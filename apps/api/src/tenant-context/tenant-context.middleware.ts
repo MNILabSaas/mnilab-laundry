@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   type NestMiddleware,
   Optional,
@@ -9,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { NextFunction, Request, Response } from 'express';
 import { Repository } from 'typeorm';
+import { AllowedOriginService } from '../common/security/allowed-origin.service.js';
 import {
   extractBearerOrCookieToken,
   LAUNDRY_AUTH_COOKIE,
@@ -46,14 +48,13 @@ export class TenantContextMiddleware implements NestMiddleware {
     @InjectRepository(TenantProfile)
     private readonly profilesRepo: Repository<TenantProfile>,
     @Optional() private readonly demoSeedService?: DemoSeedService,
+    @Optional() private readonly allowedOriginService?: AllowedOriginService,
   ) {}
 
   private extractSubdomainSlug(req: Request): string | undefined {
-    const rawHost =
-      (typeof req.headers['x-forwarded-host'] === 'string'
-        ? req.headers['x-forwarded-host'].split(',')[0]
-        : req.headers.host) || '';
-    const hostname = rawHost.split(':')[0].trim().toLowerCase();
+    // Gunakan hanya req.headers.host (tidak mempercayai x-forwarded-host secara buta)
+    const rawHost = req.headers.host || '';
+    const hostname = rawHost.split(':')[0].trim().toLowerCase().replace(/\.$/, '');
     if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1') {
       return undefined;
     }
@@ -91,11 +92,18 @@ export class TenantContextMiddleware implements NestMiddleware {
         tenantId: tenant.id,
         slug: tenant.slug,
         customDomain: tenant.customDomain ?? null,
+        customDomainVerified: Boolean(tenant.customDomainVerified),
+        customDomainVerifiedAt: tenant.customDomainVerifiedAt
+          ? new Date(tenant.customDomainVerifiedAt)
+          : null,
         brandName: tenant.brandName,
         tagline: tenant.tagline,
         logoUrl: tenant.logoUrl,
         themeConfigJson: tenant.theme ?? DEFAULT_LAUNDRY_THEME,
         whatsappPhone: tenant.whatsappPhone,
+        bankAccountsJson:
+          tenant.bankAccountsJson ?? tenant.bankAccounts ?? [],
+        qrisConfigJson: tenant.qrisConfigJson ?? null,
         isDemo: tenant.isDemo,
         subscriptionStatus: entitlement.status,
         maxBranches: entitlement.limits?.maxBranches ?? 1,
@@ -103,6 +111,9 @@ export class TenantContextMiddleware implements NestMiddleware {
       },
       ['tenantId'],
     );
+    if (tenant.customDomain) {
+      this.allowedOriginService?.invalidateDomain(tenant.customDomain);
+    }
   }
 
   async use(
@@ -181,6 +192,32 @@ export class TenantContextMiddleware implements NestMiddleware {
     const { tenant, entitlement } =
       await this.platformClient.resolveTenantBySlug(effectiveSlug);
 
+    // Jika request berasal dari Origin custom domain eksternal, pastikan Origin tersebut
+    // adalah custom domain terverifikasi milik tenant tujuan (mencegah cross-tenant Origin spoofing)
+    const rawOriginHeader =
+      typeof req.headers.origin === 'string' ? req.headers.origin : undefined;
+    const originCustomDomain =
+      this.allowedOriginService?.extractCustomDomainFromOrigin(rawOriginHeader);
+    if (originCustomDomain) {
+      const tenantDomain = tenant.customDomain?.trim().toLowerCase() || null;
+      if (
+        !tenantDomain ||
+        tenantDomain !== originCustomDomain ||
+        !tenant.customDomainVerified
+      ) {
+        throw new ForbiddenException(
+          'Akses lintas-tenant ditolak: Origin custom domain tidak sesuai dengan konteks tenant tujuan',
+        );
+      }
+    }
+
+    // Jika tenant diresolusi dari custom domain (mengandung titik), wajib sudah verified
+    if (effectiveSlug.includes('.') && !tenant.customDomainVerified) {
+      throw new ForbiddenException(
+        'Custom domain ini belum diverifikasi oleh Super Admin',
+      );
+    }
+
     await this.syncTenantProfile(tenant, entitlement);
     if (
       (tenant.isDemo || tenant.slug === 'demo-laundry') &&
@@ -193,11 +230,13 @@ export class TenantContextMiddleware implements NestMiddleware {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
       customDomain: tenant.customDomain ?? null,
+      customDomainVerified: Boolean(tenant.customDomainVerified),
       brandName: tenant.brandName,
       tagline: tenant.tagline,
       logoUrl: tenant.logoUrl,
       theme: tenant.theme ?? DEFAULT_LAUNDRY_THEME,
       whatsappPhone: tenant.whatsappPhone,
+      bankAccounts: tenant.bankAccountsJson ?? tenant.bankAccounts ?? [],
       isDemo: tenant.isDemo,
       entitlement,
     };
